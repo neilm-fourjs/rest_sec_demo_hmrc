@@ -1,0 +1,43 @@
+#
+# FOURJS_START_COPYRIGHT(U,2015)
+# Property of Four Js*
+# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# * Trademark of Four Js Development Tools Europe Ltd
+#   in the United States and elsewhere
+# 
+# Four Js and its suppliers do not warrant or guarantee that these samples
+# are accurate and suitable for your purposes. Their inclusion is purely for
+# information purposes only.
+# FOURJS_END_COPYRIGHT
+#
+
+#
+# Configuration
+#
+
+oidc.form.logo.suffix           = "/fjs/logo.png"
+oidc.form.logout.query          = "../res/logout_query.xhtml" # location of logout query formular
+
+oidc.logout.default.end_url     = "/demos.html" # default ending page after logout
+oidc.logout.id_token_hint       = true          # should send id token hint (RECOMMENDED)
+oidc.logout.post_redirect       = true          # should send the post redirect uri (OPTIONAL)
+
+oidc.oauth.subject.identifier   = "id"          # default oauth token entry name representing the user identity
+#oidc.authenticate.redirect      = "302"         # <302|POST|GET> perform the authentication redirect via html formular or 302 redirect
+oidc.authenticate.redirect      = "GET"         # <302|POST|GET> perform the authentication redirect via html formular or 302 redirect
+
+#
+# Error pages definition
+#
+oidc.error.bad_request          = "../res/errors/error_bad_request.xhtml"
+oidc.error.not_implemented      = "../res/errors/error_not_implemented.xhtml"
+oidc.error.protocol             = "../res/errors/error_protocol.xhtml"
+oidc.error.invalid_token        = "../res/errors/error_invalid_token.xhtml"
+oidc.error.access_forbidden     = "../res/errors/error_access_forbidden.xhtml"
+oidc.error.access_denied        = "../res/errors/error_access_denied.xhtml"
+oidc.error.unsecured_channel    = "../res/errors/error_unsecured_channel.xhtml"
+oidc.error.invalid_xcf_parameter= "../res/errors/error_invalid_xcf_parameter.xhtml"
+oidc.error.localhost_unallowed  = "../res/errors/error_localhost_unallowed.xhtml"
+oidc.error.logout               = "../res/errors/error_logout.xhtml"
+oidc.error.default              = "../res/errors/error_default.xhtml"
+

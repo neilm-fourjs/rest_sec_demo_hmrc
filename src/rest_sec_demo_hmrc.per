@@ -1,0 +1,46 @@
+LAYOUT (TEXT="HMRC Test Program")
+GRID
+{
+[l001         |f001                                                  ]
+[l002         |f002                                                  ]
+[l003         |f003                                                  ]
+[l004         |f004  ]
+[l005         |f005      |l006 |f006        |l7|f007        |f008    ]
+[l009         |f009]
+----------------------------------------------------------------------
+[txt                                                                 ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+}
+END -- GRID
+
+ATTRIBUTES
+LABEL l001 : l001, TEXT="Token:", JUSTIFY=RIGHT;
+LABEL l002 : l002, TEXT="Refresh Token:", JUSTIFY=RIGHT;
+LABEL l003 : l003, TEXT="Token EP:", JUSTIFY=RIGHT;
+LABEL l004 : l004, TEXT="Token Expires:", JUSTIFY=RIGHT;
+
+LABEL l005 : l005, TEXT="Vat Reg No:", JUSTIFY=RIGHT;
+LABEL l006 : l006, TEXT="From:", JUSTIFY=RIGHT;
+LABEL l7 : l7, TEXT="To:", JUSTIFY=RIGHT;
+LABEL l009 : l009, TEXT="Period:", JUSTIFY=RIGHT;
+
+f001 = FORMONLY.token;
+f002 = FORMONLY.refresh_token;
+f003 = FORMONLY.token_endpoint;
+f004 = FORMONLY.token_expires;
+
+f005 = FORMONLY.l_vatno;
+DATEEDIT f006 = FORMONLY.l_from;
+DATEEDIT f007 = FORMONLY.l_to;
+RADIOGROUP f008 = FORMONLY.l_status, ITEMS=(("O","Open"),("F","Fullfilled"));
+f009 = FORMONLY.l_period;
+
+TEXTEDIT txt = FORMONLY.m_txt, STRETCH=BOTH, FONTPITCH=FIXED;

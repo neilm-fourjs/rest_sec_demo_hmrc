@@ -1,0 +1,36 @@
+#
+# FOURJS_START_COPYRIGHT(U,2012)
+# Property of Four Js*
+# (c) Copyright Four Js 2012, 2018. All Rights Reserved.
+# * Trademark of Four Js Development Tools Europe Ltd
+#   in the United States and elsewhere
+# 
+# Four Js and its suppliers do not warrant or guarantee that these samples
+# are accurate and suitable for your purposes. Their inclusion is purely for
+# information purposes only.
+# FOURJS_END_COPYRIGHT
+#
+
+#
+# NOTE: uncomment following lines if the GAS requires a proxy to access 
+#       an OpenID provider with the correct host and port
+#
+#proxy.http.location = "proxy.strasbourg.4js.com:3128"
+#proxy.https.location = "proxy.strasbourg.4js.com:3128"
+
+
+#
+# NOTE: if an openIDConnect provider requires HTTPS communication and
+#       specific SSL configuration, take a look into GWS manual
+#       about how to set private key and certificate authority
+#       if needed
+#
+
+#
+# NOTE: change following lines to configure your own database
+#
+dbi.database.oidc.source = "../oidc.db"
+dbi.database.oidc.driver = "dbmsqt"
+
+# Configure the OAUTH identifier
+oidc.oauth.subject.identifier = "none"
