@@ -17,6 +17,7 @@ FUNCTION obligations(l_url STRING, l_token STRING)
 	LET l_vatno = "666260217"
 	LET l_from = "2017-04-06"
 	LET l_to = "2018-04-05"
+	LET l_status = "O"
 
 	LET int_flag = FALSE
 	INPUT BY NAME l_vatno, l_from, l_to, l_status WITHOUT DEFAULTS

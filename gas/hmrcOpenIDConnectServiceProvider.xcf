@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+  FOURJS_START_COPYRIGHT(U,2015)
+  Property of Four Js*
+  (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+  * Trademark of Four Js Development Tools Europe Ltd
+    in the United States and elsewhere
+  
+  Four Js and its suppliers do not warrant or guarantee that these samples
+  are accurate and suitable for your purposes. Their inclusion is purely for
+  information purposes only.
+  FOURJS_END_COPYRIGHT
+-->
+<APPLICATION Parent="ws.default"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:noNamespaceSchemaLocation="http://www.4js.com/ns/gas/3.00/cfextws.xsd">       
+		<RESOURCE Id="res.path.openid" Source="INTERNAL">$(res.deployment.path)</RESOURCE>
+    <EXECUTION>    
+      <ENVIRONMENT_VARIABLE Id="FGLPROFILE">$(res.path.openid)/res/fglprofile$(res.path.separator)$(res.path.openid)/res/configuration</ENVIRONMENT_VARIABLE>
+      <ENVIRONMENT_VARIABLE Id="FGLSQLDEBUG">3</ENVIRONMENT_VARIABLE>
+      <ENVIRONMENT_VARIABLE Id="FGLWSDEBUG">3</ENVIRONMENT_VARIABLE>
+      <PATH>$(res.path.openid)/bin</PATH>      
+      <MODULE>OpenIDConnectServer -logPath "$(res.appdata.path)" -debug DEBUG</MODULE>
+      <POOL>
+        <START>0</START>
+        <MIN_AVAILABLE>0</MIN_AVAILABLE>
+        <MAX_AVAILABLE>10</MAX_AVAILABLE>
+      </POOL>          
+    </EXECUTION>    
+</APPLICATION>

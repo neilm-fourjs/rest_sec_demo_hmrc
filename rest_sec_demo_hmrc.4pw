@@ -128,7 +128,7 @@
       <DynamicProperty name="packageId" value="rest_sec_demo_hmrc"/>
       <DynamicProperty name="packageLabel" value="rest_sec_demo_hmrc"/>
       <Directory includedFiles="*.42?" label="bin" recursive="false" sourceDirectory="$(ProjectDir)/bin"/>
-      <Directory includedFiles="rest_sec_demo_hmrc.xcf" label="gas" recursive="false" sourceDirectory="$(ProjectDir)"/>
+      <Directory includedFiles="rest_sec_demo_hmrc.xcf" label="gas" recursive="false" sourceDirectory="$(ProjectDir)/gas"/>
     </Package>
   </Group>
 </Project>

@@ -7,8 +7,6 @@ IMPORT util
 
 IMPORT FGL demos_hmrc
 
-CONSTANT C_SECRET = "xx"
-CONSTANT C_CLIENTID = "xx"
 CONSTANT C_CON_TIMEOUT = 5
 
 TYPE t_hmrc_rec RECORD
@@ -19,11 +17,15 @@ TYPE t_hmrc_rec RECORD
 	END RECORD
 DEFINE m_txt STRING
 DEFINE m_hmrc_rec t_hmrc_rec
+DEFINE m_secretId, m_clientId STRING
 MAIN
 	DEFINE l_url STRING
 
 	LET l_url = fgl_getEnv("HMRC_URL")
 	LET l_url = NVL(l_url, "https://test-api.service.hmrc.gov.uk")
+
+	LET m_clientId = fgl_getEnv("CLIENT_PUBLIC_ID")
+	LET m_secretId = fgl_getEnv("CLIENT_SECRET_ID")
 
 	OPEN FORM frm FROM "rest_sec_demo_hmrc"
 	DISPLAY FORM frm
@@ -69,7 +71,7 @@ FUNCTION refresh_token()
 		END RECORD
 
 	LET l_req_data = 
-		SFMT( "client_secret=%1&client_id=%2&grant_type=refresh_token&refresh_token=%3", C_SECRET, C_CLIENTID, m_hmrc_rec.refresh_token )
+		SFMT( "client_secret=%1&client_id=%2&grant_type=refresh_token&refresh_token=%3", m_secretId, m_clientId, m_hmrc_rec.refresh_token )
 	CALL rest_hmrc_post( m_hmrc_rec.token_endpoint, l_req_data, NULL )
 		 RETURNING l_stat, l_res_data
 	TRY
