@@ -1,10 +1,11 @@
 
 IMPORT util
+IMPORT FGL rest_sec
 
 FUNCTION hello(l_url STRING, l_token STRING)
 	DEFINE l_res_data STRING
 	DEFINE l_stat SMALLINT
-	CALL rest_hmrc_get( SFMT("%1/hello/user",l_url), l_token) RETURNING l_stat, l_res_data
+	CALL rest_sec.get( SFMT("%1/hello/user",l_url), l_token) RETURNING l_stat, l_res_data
 END FUNCTION
 --------------------------------------------------------------------------------
 FUNCTION obligations(l_url STRING, l_token STRING)
@@ -23,7 +24,7 @@ FUNCTION obligations(l_url STRING, l_token STRING)
 	INPUT BY NAME l_vatno, l_from, l_to, l_status WITHOUT DEFAULTS
 	IF int_flag THEN LET int_flag = FALSE RETURN END IF
 
-	CALL rest_hmrc_get(
+	CALL rest_sec.get(
 	 SFMT("%1/organisations/vat/%2/obligations?from=%3&to=%4&status=%5",l_url,l_vatno, l_from, l_to, l_status), l_token)
 		 RETURNING l_stat, l_res_data
 END FUNCTION
@@ -41,7 +42,7 @@ FUNCTION returns(l_url STRING, l_token STRING)
 	IF int_flag THEN LET int_flag = FALSE RETURN END IF
 
 	LET l_req_data = submit_vat(l_period)
-	CALL rest_hmrc_post( 
+	CALL rest_sec.post( 
 		SFMT("%1/organisations/vat/%2/returns", l_url, l_vatno) , l_req_data, l_token )
 		 RETURNING l_stat, l_res_data
 END FUNCTION

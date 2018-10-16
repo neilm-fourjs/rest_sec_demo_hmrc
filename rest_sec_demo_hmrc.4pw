@@ -70,7 +70,10 @@
     <Application binaryName="hmrc_creUser" id="-1298432344" label="hmrc_creUser">
       <File filePath="src/hmrc_creUser.4gl"/>
     </Application>
-    <Application binaryName="rest_sec_demo_hmrc" dependencies="14000,1986" environment="value:DBDATE=Y4MD-" id="1156422428" label="rest_sec_demo_hmrc">
+    <Library binaryName="rest_sec" id="1602646132" label="rest_sec">
+      <File filePath="src/rest_sec.4gl"/>
+    </Library>
+    <Application binaryName="rest_sec_demo_hmrc" dependencies="14000,1986,1602646132" environment="value:DBDATE=Y4MD-" id="1156422428" label="rest_sec_demo_hmrc">
       <File filePath="src/demos_hmrc.4gl"/>
       <File filePath="src/rest_sec_demo_hmrc.4gl"/>
       <File filePath="src/rest_sec_demo_hmrc.per"/>
@@ -124,7 +127,7 @@
       <Directory includedFiles="hmrcOpenIDConnectServiceProvider.xcf" label="gas" recursive="false" sourceDirectory="$(ProjectDir)/gas"/>
       <Directory destinationDirectory="$(RootDir)/res" label="res" sourceDirectory="$(ProjectDir)/res"/>
     </Package>
-    <Package binaryName="rest_sec_demo_hmrc" dependencies="1156422428,519656192" label="rest_sec_demo_hmrc" platform="Genero Application Server">
+    <Package binaryName="rest_sec_demo_hmrc" dependencies="1156422428,-133379718,1602646132" label="rest_sec_demo_hmrc" platform="Genero Application Server">
       <DynamicProperty name="packageId" value="rest_sec_demo_hmrc"/>
       <DynamicProperty name="packageLabel" value="rest_sec_demo_hmrc"/>
       <Directory includedFiles="*.42?" label="bin" recursive="false" sourceDirectory="$(ProjectDir)/bin"/>
