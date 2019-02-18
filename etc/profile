@@ -1,0 +1,3 @@
+
+# PostgreSQL
+dbi.default.driver = "dbmpgs"

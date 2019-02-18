@@ -13,6 +13,5 @@
 		<ENVIRONMENT_VARIABLE Id="HMRC_URL">$(res.service.url)</ENVIRONMENT_VARIABLE>
 		<PATH>$(res.path.demo)</PATH>
 		<MODULE>hmrcDemo</MODULE>
-		</DELEGATE>
 	</EXECUTION>
 </APPLICATION>

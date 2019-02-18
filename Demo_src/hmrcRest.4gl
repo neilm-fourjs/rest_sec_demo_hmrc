@@ -1,15 +1,13 @@
 IMPORT com
 
-CONSTANT C_SERVER_TOKEN = "<REPLACE WITH YOUR SERVER TOKEN>"
 CONSTANT C_CON_TIMEOUT = 5
-DEFINE m_txt STRING
-MAIN
+
+FUNCTION createOrginasation()
 	DEFINE l_data STRING
-	OPEN FORM frm FROM "hmrc_test"
-	DISPLAY FORM frm
-
-	CALL rest_hmrc2("https://test-api.service.hmrc.gov.uk/hello/application", C_SERVER_TOKEN, NULL )
-
+	DEFINE l_stat SMALLINT
+	DEFINE l_reply STRING
+	DEFINE l_srv_token STRING
+	LET l_srv_token = fgl_getEnv("SERVER_TOKEN")
 	LET l_data = '
 {
   "serviceNames": [
@@ -26,23 +24,21 @@ MAIN
     "customs-services"
   ]
 }'
-	CALL rest_hmrc2("https://test-api.service.hmrc.gov.uk/create-test-user/organisations", C_SERVER_TOKEN, l_data )
+	CALL rest_hmrc2("/create-test-user/organisations", l_srv_token, l_data )
+		RETURNING l_stat, l_reply
 
-	CALL disp( "Finished." )
-	MENU "Finished"
-		ON ACTION close EXIT MENU
-		ON ACTION exit EXIT MENU
-	END MENU
-END MAIN
+END FUNCTION
 --------------------------------------------------------------------------------
-FUNCTION rest_hmrc2( l_url STRING, l_token STRING, l_data STRING )
+FUNCTION rest_hmrc2( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLINT, STRING)
 	DEFINE l_req com.HttpRequest
 	DEFINE l_resp com.HTTPResponse
 	DEFINE l_info RECORD
 		status SMALLINT,
 		header STRING
 	END RECORD
+	DEFINE l_reply_data STRING
 
+	LET l_url = fgl_getEnv("HMRC_URL")||l_url
 	CALL disp("URL:"||l_url)
 	LET l_req = com.HttpRequest.Create(l_url)
 	IF l_data IS NULL THEN
@@ -66,16 +62,18 @@ FUNCTION rest_hmrc2( l_url STRING, l_token STRING, l_data STRING )
 		TRY
 			CALL l_req.doRequest()
 		CATCH
-			CALL disp( "Failed to doRequest for "||l_url||" "||STATUS||" "||ERR_GET(STATUS) )
-			RETURN
+			LET l_info.status = STATUS
+			LET l_reply_data = SFMT( "Failed to doRequest for %1 - %2 %3", l_url, l_info.status, ERR_GET(l_info.status))
+			RETURN l_info.status, l_reply_data
 		END TRY
 	ELSE
 		CALL disp("doing doTextRequest ...")
 		TRY
 			CALL l_req.doTextRequest(l_data)
 		CATCH
-			CALL disp( "Failed to doTextRequest for "||l_url||" "||STATUS||" "||ERR_GET(STATUS) )
-			RETURN
+			LET l_info.status = STATUS
+			LET l_reply_data = SFMT( "Failed to doTextRequest for %1 - %2 %3", l_url, l_info.status,ERR_GET(l_info.status) )
+			RETURN l_info.status, l_reply_data
 		END TRY
 	END IF
 
@@ -83,8 +81,9 @@ FUNCTION rest_hmrc2( l_url STRING, l_token STRING, l_data STRING )
 	TRY
 		LET l_resp = l_req.getResponse()
 	CATCH
-		CALL disp( "Failed to getResponse for "||l_url||" "||STATUS||" "||ERR_GET(STATUS) )
-		RETURN
+		LET l_info.status = STATUS
+		LET l_reply_data = "Failed to getResponse for %1 - %2 %3", l_url, l_info.status,ERR_GET(l_info.status) 
+		RETURN l_info.status, l_reply_data
 	END TRY
 
 	CALL disp("getting Status ...")
@@ -97,14 +96,11 @@ FUNCTION rest_hmrc2( l_url STRING, l_token STRING, l_data STRING )
 	END IF
 
 	LET l_info.header = l_resp.getHeader("Content-Type")
-	CALL disp( "StatusCode:"||l_info.status )
 	CALL disp( "Header:"||l_info.header )
-	CALL disp( "Response:"||l_resp.getTextResponse() )
+	LET l_reply_data = l_resp.getTextResponse()
+	RETURN l_info.status, l_reply_data
 END FUNCTION
 --------------------------------------------------------------------------------
-FUNCTION disp(l_txt STRING)
-	DISPLAY l_txt
-	LET m_txt = m_txt.append( CURRENT||":"||l_txt||"\n" )
-	DISPLAY BY NAME m_txt
-	CALL ui.Interface.refresh()
-END FUNCTION
+FUNCTION disp( l_msg STRING )
+	DISPLAY l_msg
+ENd FUNCTION

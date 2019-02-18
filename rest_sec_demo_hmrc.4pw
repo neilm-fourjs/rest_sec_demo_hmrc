@@ -63,21 +63,26 @@
   </Settings>
   <LanguageList version="1.0"/>
   <PlatformList version="1.0"/>
-  <Group environment="value:FGLPROFILE=../etc/profile,value:DBNAME=njm_demo310" label="HMRC_Demo" language="Genero">
+  <Group environment="value:FGLPROFILE=../etc/profile,value:DBNAME=njm_demo310" label="HMRC_Demo" language="Genero" targetDirectory="$(ProjectDir)/Demo_bin">
+    <Library binaryName="etc" id="1822228590" label="etc">
+      <File filePath="etc/profile"/>
+    </Library>
     <Library binaryName="gas" id="1950273171" label="gas">
-      <File filePath="gas/hmrcDemo.xcf"/>
-      <File filePath="gas/hmrcGrant.xcf"/>
+      <File filePath="Demo_gas/hmrcDemo.xcf"/>
+      <File filePath="Demo_gas/hmrcGrant.xcf"/>
     </Library>
     <Application binaryName="hmrcDemo" dependencies="374790773" id="1309108153" label="hmrcDemo">
-      <File filePath="src/hmrcDemo.4gl"/>
-      <File filePath="src/hmrcDemo.per"/>
+      <File filePath="Demo_src/hmrcDemo.4gl"/>
+      <File filePath="Demo_src/hmrcDemo.per"/>
     </Application>
     <Application binaryName="hmrcGrant" dependencies="374790773" id="556462492" label="hmrcGrant">
-      <File filePath="src/hmrcGrant.4gl"/>
-      <File filePath="src/hmrcGrant.per"/>
+      <File filePath="Demo_src/hmrcGrant.4gl"/>
+      <File filePath="Demo_src/hmrcGrant.per"/>
     </Application>
     <Library binaryName="hmrcLib" id="374790773" label="hmrcLib">
-      <File filePath="src/hmrcLib.inc"/>
+      <File filePath="Demo_src/hmrcLib.inc"/>
+      <File filePath="Demo_src/hmrcRest.4gl"/>
+      <File filePath="../../../../../opt/fourjs/all/my_github/rest_sec_demo_hmrc/etc/njm_demo310.4db"/>
     </Library>
   </Group>
   <Group label="HMRC_Test" language="Genero">
@@ -139,6 +144,13 @@
     </Library>
   </Group>
   <Group label="Packages" language="Genero">
+    <Package binaryName="hmrcDemo" dependencies="1309108153,556462492,374790773,1950273171" description="Demo HMRC Application" label="hmrcDemo" platform="Genero Application Server">
+      <DynamicProperty name="packageId" value="hmrcDemo"/>
+      <DynamicProperty name="packageLabel" value="hmrcDemo"/>
+      <Directory includedFiles="*.42?" label="bin" recursive="false" sourceDirectory="$(ProjectDir)/Demo_bin"/>
+      <Directory includedFiles="profile" label="etc" recursive="false" sourceDirectory="$(ProjectDir)/etc"/>
+      <Directory includedFiles="*.xcf" label="gas" recursive="false" sourceDirectory="$(ProjectDir)/Demo_gas"/>
+    </Package>
     <Package binaryName="hmrcOpenIDConnect" dependencies="12553495,273277692,481983288,330333794,592927465,68041506,412521500,519656192" label="hmrcOpenIDConnect" platform="Genero Application Server">
       <DynamicProperty name="packageId" value="hmrc_openid"/>
       <DynamicProperty name="packageLabel" value="hmrc_openid"/>

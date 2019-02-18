@@ -2,13 +2,9 @@
 # This program will attempt to get an access tokem for an HMRC user 
 # It MUST be run via the GAS and uses the Delegation feature.
 
-IMPORT com
-IMPORT util
-
-IMPORT FGL rest_sec
-IMPORT FGL demos_hmrc
-
 &include "hmrcLib.inc"
+
+
 
 CONSTANT C_CON_TIMEOUT = 5
 
@@ -81,10 +77,6 @@ FUNCTION dumpEnv(l_match STRING)
 	CALL c.close()
 	CALL disp("------------------------------")
 END FUNCTION
---------------------------------------------------------------------------------
-FUNCTION disp( l_msg STRING )
-	DISPLAY l_msg
-ENd FUNCTION
 --------------------------------------------------------------------------------
 FUNCTION upd_hmrcdb()
 	DEFINE l_rec t_hmrcAccessTokens

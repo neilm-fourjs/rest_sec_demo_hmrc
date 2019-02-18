@@ -1,4 +1,6 @@
 
+SCHEMA njm_demo310
+
 TYPE t_hmrcOrganisations RECORD
   	userId VARCHAR(30),
   	password VARCHAR(30),
