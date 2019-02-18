@@ -1,0 +1,30 @@
+
+LAYOUT (TEXT="HMRC Demo")
+VBOX
+TABLE
+{
+[a001   |a002     |a003        |a004       |a005        |a06]
+[a001   |a002     |a003        |a004       |a005        |a06]
+[a001   |a002     |a003        |a004       |a005        |a06]
+[a001   |a002     |a003        |a004       |a005        |a06]
+[a001   |a002     |a003        |a004       |a005        |a06]
+}
+END -- TABLE
+GRID
+{
+test
+
+}
+END -- GRID
+END -- VBOX
+
+ATTRIBUTES
+
+a001 = FORMONLY.userId, TITLE="UserID";
+a002 = FORMONLY.userFullName, TITLE="Name";
+a003 = FORMONLY.emailAddress, TITLE="Email";
+a004 = FORMONLY.org_name, TITLE="Organization";
+a005 = FORMONLY.vrn, TITLE="V.R.N.";
+COMBOBOX a06 = FORMONLY.stat,TITLE="Status",ITEMS=(("Y","Valid Token"),("N","No Token"),("E","Expired Token"));
+INSTRUCTIONS
+SCREEN RECORD arr (FORMONLY.userId THRU FORMONLY.stat )

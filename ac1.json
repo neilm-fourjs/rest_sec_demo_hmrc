@@ -1,0 +1,25 @@
+{
+  "userId": "219947241700",
+  "password": "9BvTjHfXelmr",
+  "userFullName": "Alex Russel",
+  "emailAddress": "alex.russel@example.com",
+  "organisationDetails": {
+    "name": "Company LP7LBU",
+    "address": {
+      "line1": "34 Holloway Passage",
+      "line2": "Manchester",
+      "postcode": "TS13 1PA"
+    }
+  },
+  "saUtr": "2000012675",
+  "nino": "MA995253C",
+  "mtdItId": "XRIT00000575832",
+  "empRef": "527/R6CZCESJOY",
+  "ctUtr": "6000027333",
+  "vrn": "600989238",
+  "vatRegistrationDate": "2000-02-18",
+  "lisaManagerReferenceNumber": "Z9680",
+  "secureElectronicTransferReferenceNumber": "111111111199",
+  "pensionSchemeAdministratorIdentifier": "A5510604",
+  "eoriNumber": "GB9688875467"
+}
