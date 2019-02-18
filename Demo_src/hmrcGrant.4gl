@@ -2,9 +2,9 @@
 # This program will attempt to get an access tokem for an HMRC user 
 # It MUST be run via the GAS and uses the Delegation feature.
 
+IMPORT FGL hmrcRest
+
 &include "hmrcLib.inc"
-
-
 
 CONSTANT C_CON_TIMEOUT = 5
 
@@ -49,8 +49,11 @@ MAIN
 -- Store the access tokein the DB.
 		CALL upd_hmrcdb()
 	ELSE
+		LET m_msg = "No Token - Error!"
 		CALL dumpEnv("*")
 	END IF
+
+	CALL prog_finish()
 END MAIN
 --------------------------------------------------------------------------------
 FUNCTION prog_finish()

@@ -1,5 +1,6 @@
 
 IMPORT util
+IMPORT os
 
 &include "hmrcLib.inc"
 
@@ -13,11 +14,12 @@ DEFINE m_arr DYNAMIC ARRAY OF RECORD
   	vrn VARCHAR(20),
 		stat CHAR(1)
 	END RECORD
+DEFINE m_getTokenURL STRING
 MAIN
 	DEFINE l_dbName STRING
-	DEFINE x SMALLINT
 
 	LET l_dbName = fgl_getEnv("DBNAME")
+	LET m_getTokenURL = fgl_getEnv("GRANTURL")
 	
 	OPEN FORM hmrcDemo FROM "hmrcDemo"
 	DISPLAY FORM hmrcDemo
@@ -36,31 +38,10 @@ MAIN
 	END FOREACH
 	CALL m_orgs.deleteElement( m_orgs.getLength() )
 
-
 	IF m_orgs.getLength() = 0 THEN
-		CALL loadFromJson("../ac1.json")
+		CALL loadFromJson(os.path.join(fgl_getEnv("BASE"),"ac1.json"))
 	END IF
-
-	FOR x = 1 TO m_orgs.getLength()
-		IF m_orgs[ m_orgs.getLength() ].vrn IS NOT NULL THEN
-			LET m_arr[ m_arr.getLength() + 1 ].userId = m_orgs[ m_orgs.getLength() ].userId
-			LET m_arr[ m_arr.getLength() ].emailAddress = m_orgs[ m_orgs.getLength() ].emailAddress
-			LET m_arr[ m_arr.getLength() ].org_name = m_orgs[ m_orgs.getLength() ].org_name
-			LET m_arr[ m_arr.getLength() ].userFullName = m_orgs[ m_orgs.getLength() ].userFullName
-			LET m_arr[ m_arr.getLength() ].vrn = m_orgs[ m_orgs.getLength() ].vrn
-
-			SELECT * INTO m_toks[ m_orgs.getLength() ].* FROM hmrcAccessTokens WHERE vrn = m_orgs[ m_orgs.getLength() ].vrn
-			IF STATUS = 0 THEN
-				IF m_toks[ m_orgs.getLength() ].token_expires < CURRENT THEN
-					LET m_arr[ m_arr.getLength() ].stat = "Y" -- valid
-				ELSE
-					LET m_arr[ m_arr.getLength() ].stat = "E" -- expired
-				END IF
-			ELSE
-				LET m_arr[ m_arr.getLength() ].stat = "N" -- no token
-			END IF
-		END IF
-	END FOR
+	CALL getTokensForOrgs()
 
 	DISPLAY ARRAY m_arr TO arr.*
 		BEFORE ROW
@@ -72,12 +53,47 @@ MAIN
 		ON ACTION close EXIT DISPLAY
 		ON ACTION neworg CALL newOrg()
 		ON ACTION gettok 
-			IF m_arr[ arr_curr() ].stat != "Y" THEN CALL getToken() END IF
+			IF m_arr[ arr_curr() ].stat != "Y" THEN CALL getToken(arr_curr()) END IF
 	END DISPLAY
 
 END MAIN
 --------------------------------------------------------------------------------
-FUNCTION getToken()
+FUNCTION getTokensForOrgs()
+	DEFINE x SMALLINT
+	CALL m_arr.clear()
+	CALL m_toks.clear()
+	FOR x = 1 TO m_orgs.getLength()
+		LET m_arr[ x ].userId = m_orgs[x ].userId
+		LET m_arr[ x ].emailAddress = m_orgs[ x ].emailAddress
+		LET m_arr[ x ].org_name = m_orgs[ x ].org_name
+		LET m_arr[ x ].userFullName = m_orgs[ x ].userFullName
+		LET m_arr[ x ].vrn = m_orgs[ x ].vrn
+		CALL getTokenForOrg( x  )
+	END FOR
+END FUNCTION
+--------------------------------------------------------------------------------
+FUNCTION getTokenForOrg( orgno SMALLINT )
+	SELECT * INTO m_toks[ orgno ].* FROM hmrcAccessTokens WHERE vrn = m_orgs[ orgno ].vrn
+	IF STATUS = 0 THEN
+		DISPLAY "Expires:",m_toks[ orgno ].token_expires," Current:",CURRENT
+		IF m_toks[ orgno ].token_expires > CURRENT THEN
+			LET m_arr[orgno ].stat = "Y" -- valid
+		ELSE
+			LET m_arr[ orgno ].stat = "E" -- expired
+		END IF
+	ELSE
+		LET m_arr[ orgno ].stat = "N" -- no token
+	END IF
+END FUNCTION
+--------------------------------------------------------------------------------
+FUNCTION getToken( orgno SMALLINT)
+
+	LET m_getTokenURL = m_getTokenURL||"?Arg1="||m_orgs[ orgno ].vrn
+	CALL ui.Interface.frontCall("standard", "launchURL", [m_getTokenURL], [] )
+	MENU
+		COMMAND "Grant Done" EXIT MENU
+	END MENU
+	CALL getTokenForOrg( orgno  )
 
 END FUNCTION
 --------------------------------------------------------------------------------

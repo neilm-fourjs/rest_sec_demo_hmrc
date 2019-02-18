@@ -2,15 +2,20 @@
 	<RESOURCE Id="res.path.demo" Source="INTERNAL">$(res.deployment.path)</RESOURCE>
 	<RESOURCE Id="res.publicId" Source="INTERNAL"><!-- place your client public id here --></RESOURCE>
 	<RESOURCE Id="res.secretId" Source="INTERNAL"><!-- place your client secret id here --></RESOURCE>
+	<RESOURCE Id="res.serverToken" Source="INTERNAL"><!-- place your Server Token here --></RESOURCE>
 	<RESOURCE Id="res.service.url" Source="INTERNAL">https://test-api.service.hmrc.gov.uk</RESOURCE>
+	<RESOURCE Id="res.grant.url" Source="INTERNAL">https://generodemo.hopto.org/g/ua/r/hmrcGrant</RESOURCE>
 	<EXECUTION>
-		<!-- ENVIRONMENT_VARIABLE Id="FGLPROFILE">$(res.path.demo)/res/fglprofile</ENVIRONMENT_VARIABLE-->
+		<ENVIRONMENT_VARIABLE Id="BASE">.</ENVIRONMENT_VARIABLE>
+		<ENVIRONMENT_VARIABLE Id="FGLPROFILE">profile</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="FGLWSDEBUG">9</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="DBDATE">DMY4/</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="DBNAME">njm_demo310</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="CLIENT_PUBLIC_ID">$(res.publicId)</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="CLIENT_SECRET_ID">$(res.secretId)</ENVIRONMENT_VARIABLE>
+		<ENVIRONMENT_VARIABLE Id="SERVER_TOKEN">$(res.serverToken)</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="HMRC_URL">$(res.service.url)</ENVIRONMENT_VARIABLE>
+		<ENVIRONMENT_VARIABLE Id="GRANTURL">$(res.grant.url)</ENVIRONMENT_VARIABLE>
 		<PATH>$(res.path.demo)</PATH>
 		<MODULE>hmrcDemo</MODULE>
 	</EXECUTION>

@@ -63,7 +63,7 @@
   </Settings>
   <LanguageList version="1.0"/>
   <PlatformList version="1.0"/>
-  <Group environment="value:FGLPROFILE=../etc/profile,value:DBNAME=njm_demo310" label="HMRC_Demo" language="Genero" targetDirectory="$(ProjectDir)/Demo_bin">
+  <Group environment="value:BASE=..,value:GRANTURL=https://generodemo.hopto.org/g/ua/r/hmrcGrant,value:FGLPROFILE=../etc/profile,value:DBNAME=njm_demo310" label="HMRC_Demo" language="Genero" targetDirectory="$(ProjectDir)/Demo_bin">
     <Library binaryName="etc" id="1822228590" label="etc">
       <File filePath="etc/profile"/>
     </Library>
@@ -150,6 +150,7 @@
       <Directory includedFiles="*.42?" label="bin" recursive="false" sourceDirectory="$(ProjectDir)/Demo_bin"/>
       <Directory includedFiles="profile" label="etc" recursive="false" sourceDirectory="$(ProjectDir)/etc"/>
       <Directory includedFiles="*.xcf" label="gas" recursive="false" sourceDirectory="$(ProjectDir)/Demo_gas"/>
+      <Directory includedFiles="ac1.json" label="misc" recursive="false" sourceDirectory="$(ProjectDir)"/>
     </Package>
     <Package binaryName="hmrcOpenIDConnect" dependencies="12553495,273277692,481983288,330333794,592927465,68041506,412521500,519656192" label="hmrcOpenIDConnect" platform="Genero Application Server">
       <DynamicProperty name="packageId" value="hmrc_openid"/>
