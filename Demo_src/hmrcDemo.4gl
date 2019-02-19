@@ -57,6 +57,7 @@ MAIN
 			LET l_orgno = arr_curr()
 			LET m_cur_vatNo = m_orgs[ l_orgno ].vrn
 			DISPLAY BY NAME m_orgs[ l_orgno ].userId, m_orgs[ l_orgno ].password
+			DISPLAY BY NAME m_toks[ l_orgno ].token, m_toks[ l_orgno ].token_expires
 			DISPLAY "" TO l_url
 			CALL DIALOG.setActionActive("gettok", FALSE)
 			CALL DIALOG.setActionActive("gettok_wc", FALSE)
@@ -184,6 +185,7 @@ FUNCTION refreshTokenFromHMRC( l_orgno SMALLINT )
 		CALL hmrcLib.errDisp(hmrcLib.m_db_err)
 	ELSE
 		MESSAGE "Token Registered"
+		CALL getTokenForOrgFromDB( l_orgno )
 	END IF
 END FUNCTION
 --------------------------------------------------------------------------------
@@ -306,10 +308,16 @@ FUNCTION newObligationsFromJson( l_data STRING )
 	END RECORD
 	TRY
 		CALL util.JSON.parse( l_data, l_rec )
-		MESSAGE "New Obligations Loaded"
 	CATCH
 		CALL hmrcLib.errDisp( SFMT("Failed to Parse JSON Obligations %1-%2", STATUS, ERR_GET(STATUS)) )
 		RETURN
 	END TRY
+	CALL newObligationsToDB( l_rec.obligations )
+END FUNCTION
+--------------------------------------------------------------------------------
+-- insert new Obligations into DB if it doesn't already exist.
+FUNCTION newObligationsToDB( l_arr DYNAMIC ARRAY OF t_obligations )
+--TODO: insert into DB!
+	MESSAGE "New Obligations Loaded"
 END FUNCTION
 --------------------------------------------------------------------------------

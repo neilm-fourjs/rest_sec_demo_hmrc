@@ -12,9 +12,11 @@ TABLE
 END -- TABLE
 GRID
 {
-User Id: [f001                ] From:[f003      ]
-Password:[f002                ] To:  [f004      ]
-                                Stat:[f005      ]
+User Id: [f001               ]            <G "Obligations"     >
+Password:[f002               ]               From:[f003      ]
+Token:   [t001                           ]   To:  [f004      ]
+Expires: [t002               ]               Stat:[f005      ]
+                                          <                    >
 [url                                                           ]
 }
 END -- GRID
@@ -23,10 +25,14 @@ END -- VBOX
 ATTRIBUTES
 f001 = FORMONLY.userid;
 f002 = FORMONLY.password;
-LABEL url = FORMONLY.l_url, SIZEPOLICY=DYNAMIC;
+t001 = FORMONLY.token;
+t002 = FORMONLY.token_expires;
+
 DATEEDIT f003 = FORMONLY.l_from;
 DATEEDIT f004 = FORMONLY.l_to;
 COMBOBOX f005 = FORMONLY.l_status, ITEMS=(("O","Open"),("C","Closed"));
+
+LABEL url = FORMONLY.l_url, SIZEPOLICY=DYNAMIC;
 
 a001 = FORMONLY.a_userId, TITLE="UserID";
 a002 = FORMONLY.a_userFullName, TITLE="Name";
