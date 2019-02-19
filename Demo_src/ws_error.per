@@ -1,10 +1,10 @@
 
-LAYOUT (TEXT="Get Authorization Token", STYLE="dialog")
+LAYOUT (TEXT="WS Error", STYLE="dialog")
 GRID
 {
-User Id:[f001                ]Password:[f002                ]
-[url                                                                           ]
-[wc                                                                            ]
+[l_msg                                                                         ]
+[l_url                                                                         ]
+[l_data                                                                        ]
 [                                                                              ]
 [                                                                              ]
 [                                                                              ]
@@ -26,7 +26,6 @@ User Id:[f001                ]Password:[f002                ]
 END -- GRID
 
 ATTRIBUTES
-f001 = FORMONLY.userid;
-f002 = FORMONLY.password;
-url = FORMONLY.l_url;
-WEBCOMPONENT wc = FORMONLY.wc, STRETCH=BOTH;
+l_msg = FORMONLY.l_msg;
+l_url = FORMONLY.l_url;
+TEXTEDIT l_data = FORMONLY.l_data, STRETCH=BOTH;

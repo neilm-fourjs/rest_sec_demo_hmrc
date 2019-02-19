@@ -9,7 +9,6 @@ IMPORT FGL hmrcLib
 
 DEFINE m_msg STRING
 MAIN
-	DEFINE l_url STRING
 	DEFINE l_hmrcToken t_hmrcAccessToken
 	DEFINE l_expires INTEGER
 
@@ -22,12 +21,10 @@ MAIN
 		EXIT PROGRAM
 	END IF
 
-	LET l_url = fgl_getEnv("HMRC_URL")
-	LET l_url = NVL(l_url, "https://test-api.service.hmrc.gov.uk")
-
 	LET l_hmrcToken.vrn = ARG_VAL(1)
 	IF l_hmrcToken.vrn IS NULL OR LENGTH(l_hmrcToken.vrn) < 2 THEN
-		LET m_msg = "Invalid Args!"
+		CALL dumpEnv("*")
+		LET m_msg = SFMT("Invalid Args! - %1", ARG_VAL(1))
 		CALL prog_finish()
 		EXIT PROGRAM
 	END IF

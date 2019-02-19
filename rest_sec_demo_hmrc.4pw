@@ -63,30 +63,31 @@
   </Settings>
   <LanguageList version="1.0"/>
   <PlatformList version="1.0"/>
-  <Group environment="value:HMRC_URL=https://test-api.service.hmrc.gov.uk,value:BASE=..,value:GRANTURL=https://generodemo.hopto.org/g/ua/r/hmrcGrant1,value:FGLPROFILE=../etc/profile,value:DBNAME=njm_demo310" label="HMRC_Demo" language="Genero" targetDirectory="$(ProjectDir)/Demo_bin">
+  <Group environment="value:DBDATE=Y4MD-,value:HMRC_URL=https://test-api.service.hmrc.gov.uk,value:BASE=..,value:GRANTURL=https://generodemo.hopto.org/g/ua/r/hmrcGrant1,value:FGLPROFILE=../etc/profile,value:DBNAME=njm_demo310" label="HMRC_Demo" language="Genero" targetDirectory="$(ProjectDir)/Demo_bin">
     <Library binaryName="etc" id="1822228590" label="etc">
+      <File filePath="etc/default.4ad"/>
+      <File filePath="etc/default.4st"/>
+      <File filePath="etc/njm_demo310.4db"/>
       <File filePath="etc/profile"/>
     </Library>
-    <Library binaryName="gas" id="1950273171" label="gas">
+    <Library binaryName="gas" excludeFromBuild="true" id="1950273171" label="gas">
       <File filePath="Demo_gas/hmrcDemo.xcf"/>
       <File filePath="Demo_gas/hmrcGrant.xcf"/>
     </Library>
-    <Application binaryName="hmrcDemo" dependencies="374790773" id="1309108153" label="hmrcDemo">
+    <Application binaryName="hmrcDemo" dependencies="374790773,1822228590" id="1309108153" label="hmrcDemo">
       <File filePath="Demo_src/getToken_wc.per"/>
       <File filePath="Demo_src/hmrcDemo.4gl"/>
       <File filePath="Demo_src/hmrcDemo.per"/>
     </Application>
-    <Application binaryName="hmrcGrant" dependencies="374790773" id="556462492" label="hmrcGrant">
+    <Application binaryName="hmrcGrant" dependencies="374790773,1822228590" id="556462492" label="hmrcGrant">
       <File filePath="Demo_src/hmrcGrant.4gl"/>
       <File filePath="Demo_src/hmrcGrant.per"/>
     </Application>
-    <Library binaryName="hmrcLib" id="374790773" label="hmrcLib">
-      <File filePath="etc/default.4ad"/>
-      <File filePath="etc/default.4st"/>
+    <Library binaryName="hmrcLib" dependencies="1822228590" id="374790773" label="hmrcLib">
       <File filePath="Demo_src/hmrcLib.4gl"/>
       <File filePath="Demo_src/hmrcLib.inc"/>
       <File filePath="Demo_src/hmrcRest.4gl"/>
-      <File filePath="etc/njm_demo310.4db"/>
+      <File filePath="Demo_src/ws_error.per"/>
     </Library>
   </Group>
   <Group label="HMRC_Test" language="Genero">

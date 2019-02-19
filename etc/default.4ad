@@ -10,8 +10,8 @@ Property of Four Js*
 -->
 
 <ActionDefaultList>
-  <ActionDefault name="accept" text="OK" acceleratorName="Return" acceleratorName2="Enter" contextMenu="no"/>
-  <ActionDefault name="cancel" validate="no" text="Cancel" acceleratorName="Escape" contextMenu="no"/>
+  <ActionDefault name="accept" image="accept" text="OK" acceleratorName="Return" acceleratorName2="Enter" contextMenu="no"/>
+  <ActionDefault name="cancel" image="cancel" validate="no" text="Cancel" acceleratorName="Escape" contextMenu="no"/>
   <ActionDefault name="insert" text="Insert" acceleratorName="F3" contextMenu="no"/>
   <ActionDefault name="append" text="Append" acceleratorName="Control-F3" contextMenu="no"/>
   <ActionDefault name="update" text="Update" />
@@ -47,5 +47,6 @@ Property of Four Js*
   <ActionDefault name="refreshok" text="Refresh Token for Organisation" image="fa-refresh" contextMenu="no"/>
   <ActionDefault name="gettok" text="Get Token for Organisation" image="fa-ticket" contextMenu="no"/>
   <ActionDefault name="gettok_wc" text="Get Token for Organisation WC" image="fa-ticket" contextMenu="no"/>
+  <ActionDefault name="obligations" text="Get Obligations" image="fa-list" contextMenu="no"/>
 
 </ActionDefaultList>

@@ -30,8 +30,26 @@ FUNCTION errDisp( l_msg STRING )
 	END IF
 END FUNCTION
 --------------------------------------------------------------------------------
+FUNCTION errDisp2( l_msg STRING, l_url STRING, l_data STRING )
+	LET l_data = l_data.trim()
+	DISPLAY SFMT("%1) %2\n%3", CURRENT, l_msg, l_data)
+	OPEN WINDOW err WITH FORM "ws_error"
+	DISPLAY BY NAME l_msg, l_url, l_data
+	MENU
+		ON ACTION close EXIT MENU
+		ON ACTION exit EXIT MENU
+	END MENU
+	CLOSE WINDOW err
+END FUNCTION
+--------------------------------------------------------------------------------
+FUNCTION processing( l_msg STRING )
+	CALL disp( l_msg )
+	MESSAGE SFMT("%1) %2", CURRENT, l_msg)
+	CALL ui.Interface.refresh()
+ENd FUNCTION
+--------------------------------------------------------------------------------
 FUNCTION disp( l_msg STRING )
-	DISPLAY SFMT("%1) %2",CURRENT,l_msg)
+	DISPLAY SFMT("%1) %2", CURRENT, l_msg)
 ENd FUNCTION
 --------------------------------------------------------------------------------
 -- create the tables if they don't exist

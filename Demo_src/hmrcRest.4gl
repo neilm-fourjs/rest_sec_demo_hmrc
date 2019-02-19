@@ -13,7 +13,8 @@ FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLIN
 	END RECORD
 	DEFINE l_reply_data STRING
 
-	CALL disp("URL:"||l_url)
+	CALL processing( SFMT("Processing: %1",l_url))
+
 	LET l_req = com.HttpRequest.Create(l_url)
 	IF l_data IS NULL THEN
 		CALL l_req.setMethod("GET")
@@ -24,7 +25,7 @@ FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLIN
 	CALL l_req.setHeader("Accept", "application/vnd.hmrc.1.0+json")
 	CALL l_req.setHeader("Gov-Test-Scenario","-")
 
-	CALL disp("Setting Time Out "||C_CON_TIMEOUT)
+	CALL processing("Setting Time Out "||C_CON_TIMEOUT)
 	CALL l_req.setConnectionTimeOut( C_CON_TIMEOUT )
 
 	IF l_token IS NOT NULL THEN
@@ -32,7 +33,7 @@ FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLIN
 	END IF
 
 	IF l_data IS NULL THEN
-		CALL disp("doing doRequest ...")
+		CALL processing("doing doRequest ...")
 		TRY
 			CALL l_req.doRequest()
 		CATCH
@@ -41,7 +42,7 @@ FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLIN
 			RETURN l_info.status, l_reply_data
 		END TRY
 	ELSE
-		CALL disp("doing doTextRequest ...")
+		CALL processing("doing doTextRequest ...")
 		TRY
 			CALL l_req.doTextRequest(l_data)
 		CATCH
@@ -51,7 +52,7 @@ FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLIN
 		END TRY
 	END IF
 
-	CALL disp("doing getResponse ...")
+	CALL processing("doing getResponse ...")
 	TRY
 		LET l_resp = l_req.getResponse()
 	CATCH
@@ -60,13 +61,12 @@ FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLIN
 		RETURN l_info.status, l_reply_data
 	END TRY
 
-	CALL disp("getting Status ...")
+	CALL processing("getting Status ...")
 	LET l_info.status = l_resp.getStatusCode()
-	IF l_info.status != 200 THEN
-		CALL disp( "Failed:"||l_info.status)
---		RETURN
+	IF l_info.status > 250 THEN
+		CALL processing( "Failed:"||l_info.status )
 	ELSE
-		CALL disp( "Success!" )
+		CALL processing( "Success:"||l_info.status )
 	END IF
 
 	LET l_info.header = l_resp.getHeader("Content-Type")
