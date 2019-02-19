@@ -18,10 +18,12 @@ FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLIN
 	LET l_req = com.HttpRequest.Create(l_url)
 	IF l_data IS NULL THEN
 		CALL l_req.setMethod("GET")
+		CALL l_req.setHeader("Content-Type", "application/json")
 	ELSE
 		CALL l_req.setMethod("POST")
+		CALL l_req.setHeader("Content-Type", "application/x-www-form-urlencoded")
 	END IF
-	CALL l_req.setHeader("Content-Type", "application/json")
+
 	CALL l_req.setHeader("Accept", "application/vnd.hmrc.1.0+json")
 	CALL l_req.setHeader("Gov-Test-Scenario","-")
 

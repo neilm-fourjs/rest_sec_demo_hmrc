@@ -60,7 +60,7 @@ MAIN
 			DISPLAY "" TO l_url
 			CALL DIALOG.setActionActive("gettok", FALSE)
 			CALL DIALOG.setActionActive("gettok_wc", FALSE)
-			CALL DIALOG.setActionActive("refreshok", FALSE)
+			CALL DIALOG.setActionActive("refreshok", TRUE) -- temp set TRUE for testing
 			IF m_arr[ l_orgno ].stat MATCHES "[NE]" THEN
 				CALL DIALOG.setActionActive("gettok", TRUE)
 				CALL DIALOG.setActionActive("gettok_wc", TRUE)

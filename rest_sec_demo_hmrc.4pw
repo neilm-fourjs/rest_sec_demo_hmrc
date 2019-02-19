@@ -96,8 +96,6 @@
     </Library>
     <Application binaryName="hmrc_creUser" id="-1298432344" label="hmrc_creUser">
       <File filePath="src/hmrc_creUser.4gl"/>
-    </Application>
-    <Application binaryName="hmrc_test" id="-1689990160" label="hmrc_test">
       <File filePath="src/hmrc_test.per"/>
     </Application>
     <Library binaryName="rest_sec" id="1602646132" label="rest_sec">

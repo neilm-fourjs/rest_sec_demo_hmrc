@@ -1,0 +1,35 @@
+LAYOUT (TEXT="HMRC Test Program")
+GRID
+{
+[l001         |f001                                                  ]
+[l002         |f002                                                  ]
+[l003         |f003                                                  ]
+[l004         |f004  ]        [l005|f005                             ]
+----------------------------------------------------------------------
+[txt                                                                 ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+[                                                                    ]
+}
+END -- GRID
+
+ATTRIBUTES
+LABEL l001 : l001, TEXT="Token:", JUSTIFY=RIGHT;
+LABEL l002 : l002, TEXT="Refresh Token:", JUSTIFY=RIGHT;
+LABEL l003 : l003, TEXT="Token EP:", JUSTIFY=RIGHT;
+LABEL l004 : l004, TEXT="Token Expires:", JUSTIFY=RIGHT;
+LABEL l005 : l005, TEXT="Database:",JUSTIFY=RIGHT;
+
+f001 = FORMONLY.token;
+f002 = FORMONLY.refresh_token;
+f003 = FORMONLY.token_endpoint;
+f004 = FORMONLY.token_expires;
+f005 = FORMONLY.database_name;
+
+TEXTEDIT txt = FORMONLY.m_txt, STRETCH=BOTH, FONTPITCH=FIXED;
