@@ -54,6 +54,17 @@ ENd FUNCTION
 --------------------------------------------------------------------------------
 -- create the tables if they don't exist
 FUNCTION chkTables()
+	IF ARG_VAL(1) = "RESET" THEN
+		TRY
+			DROP TABLE hmrcAccessTokens
+		CATCH
+		END TRY
+		TRY
+			DROP TABLE hmrcOrganisations
+		CATCH
+		END TRY
+	END IF
+
 	TRY
 		CREATE TABLE hmrcAccessTokens (
 			vrn VARCHAR(20),
@@ -104,7 +115,7 @@ FUNCTION updateTokenInDB( l_hmrcToken t_hmrcAccessToken)
 			RETURN FALSE
 		END IF
 	ELSE
-		UPDATE hmrcAccessTokens SET hmrcAccessTokens.* = l_hmrcToken.* WHERE vrn = l_rec.vrn
+		UPDATE hmrcAccessTokens SET hmrcAccessTokens.* = l_hmrcToken.* WHERE vrn = l_hmrcToken.vrn
 		IF STATUS != 0 THEN
 			LET m_db_err = "New Token update failed:",STATUS,":",SQLERRMESSAGE
 			RETURN FALSE

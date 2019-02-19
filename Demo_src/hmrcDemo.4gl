@@ -1,4 +1,8 @@
 
+-- Demo program for HMRC Restful calls.
+--
+-- Arg1: RESET = drop and re-create tables.
+
 IMPORT util
 IMPORT os
 IMPORT FGL hmrcLib
@@ -17,8 +21,11 @@ DEFINE m_arr DYNAMIC ARRAY OF RECORD
 		stat CHAR(1)
 	END RECORD
 DEFINE m_getTokenURL, m_clientId, m_secretId STRING
+DEFINE m_cur_vatNo STRING
+TYPE t_callBack_func FUNCTION(l_data STRING)
 MAIN
 	DEFINE l_orgno SMALLINT
+	DEFINE l_callBack t_callBack_func
 
 	LET m_getTokenURL = fgl_getEnv("GRANTURL")
 	LET m_clientId = fgl_getEnv("CLIENT_PUBLIC_ID")
@@ -35,14 +42,20 @@ MAIN
 
 	CALL setupOrganisationArray()
 
+-- Load test json files from disk
 	IF m_orgs.getLength() = 0 THEN
-		CALL loadFromJson(os.path.join(fgl_getEnv("BASE"),"ac1.json"))
+		LET l_callBack = FUNCTION newOrganisationFromJson
+		CALL loadFromJson(os.path.join(fgl_getEnv("BASE"),"org1.json"), l_callBack )
+		LET l_callBack = FUNCTION newObligationsFromJson
+		CALL loadFromJson(os.path.join(fgl_getEnv("BASE"),"obl1.json"), l_callBack )
 	END IF
+
 	CALL setupScreenArray()
 
 	DISPLAY ARRAY m_arr TO arr.* ATTRIBUTES(ACCEPT=FALSE, CANCEL=FALSE, UNBUFFERED)
 		BEFORE ROW
 			LET l_orgno = arr_curr()
+			LET m_cur_vatNo = m_orgs[ l_orgno ].vrn
 			DISPLAY BY NAME m_orgs[ l_orgno ].userId, m_orgs[ l_orgno ].password
 			DISPLAY "" TO l_url
 			CALL DIALOG.setActionActive("gettok", FALSE)
@@ -56,15 +69,15 @@ MAIN
 				CALL DIALOG.setActionActive("refreshok", TRUE)
 			END IF
 
-		ON ACTION neworg CALL hmrcNewOrganisation()
+		ON ACTION neworg CALL newOrganisationFromHMRC()
 
-		ON ACTION refreshok CALL hmrcRefreshToken(l_orgno)
+		ON ACTION refreshok CALL refreshTokenFromHMRC(l_orgno)
 
-		ON ACTION gettok CALL getToken(l_orgno)
+		ON ACTION gettok CALL newTokenFromHMRC(l_orgno)
 
-		ON ACTION gettok_wc CALL getToken_wc(l_orgno)
+		ON ACTION gettok_wc CALL newTokenFromHMRC_wc(l_orgno)
 
-		ON ACTION obligations CALL getObligations(l_orgno)
+		ON ACTION obligations CALL newObligationsFromHMRC(l_orgno)
 
 		ON ACTION quit EXIT DISPLAY
 		ON ACTION close EXIT DISPLAY
@@ -111,9 +124,9 @@ FUNCTION getTokenForOrgFromDB( l_orgno SMALLINT )
 END FUNCTION
 --------------------------------------------------------------------------------
 -- get the Token by calling oauth program.
-FUNCTION getToken( l_orgno SMALLINT )
+FUNCTION newTokenFromHMRC( l_orgno SMALLINT )
 	DEFINE l_url STRING
-	LET l_url = m_getTokenURL||"?Arg1="||m_orgs[ l_orgno ].vrn
+	LET l_url = m_getTokenURL||"?Arg="||m_orgs[ l_orgno ].vrn
 	DISPLAY BY NAME l_url
 	CALL ui.Interface.frontCall("standard", "launchURL", [l_url], [] )
 	MENU
@@ -123,10 +136,10 @@ FUNCTION getToken( l_orgno SMALLINT )
 END FUNCTION
 --------------------------------------------------------------------------------
 -- get the Token by calling oauth program in a WebComponent
-FUNCTION getToken_wc( l_orgno SMALLINT )
+FUNCTION newTokenFromHMRC_wc( l_orgno SMALLINT )
 	DEFINE l_url STRING
 	OPEN WINDOW getToken_wc WITH FORM "getToken_wc"
-	LET l_url = m_getTokenURL||"?Arg1="||m_orgs[ l_orgno ].vrn
+	LET l_url = m_getTokenURL||"?Arg="||m_orgs[ l_orgno ].vrn
 	DISPLAY BY NAME m_orgs[ l_orgno ].userId, m_orgs[ l_orgno ].password, l_url
 	DISPLAY l_url TO wc
 	MENU
@@ -138,7 +151,7 @@ FUNCTION getToken_wc( l_orgno SMALLINT )
 END FUNCTION
 --------------------------------------------------------------------------------
 -- Refresh the token for the Organisation
-FUNCTION hmrcRefreshToken( l_orgno SMALLINT )
+FUNCTION refreshTokenFromHMRC( l_orgno SMALLINT )
 	DEFINE l_req_data, l_data STRING
 	DEFINE l_stat SMALLINT
 	DEFINE l_hmrcToken t_hmrcAccessToken
@@ -175,7 +188,7 @@ FUNCTION hmrcRefreshToken( l_orgno SMALLINT )
 END FUNCTION
 --------------------------------------------------------------------------------
 -- Create a new Test Organisation using the API
-FUNCTION hmrcNewOrganisation()
+FUNCTION newOrganisationFromHMRC()
 	DEFINE l_data STRING
 	DEFINE l_stat SMALLINT
 	DEFINE l_reply, l_url, l_srv_token STRING
@@ -201,14 +214,14 @@ FUNCTION hmrcNewOrganisation()
 	CALL hmrcRest.request(l_url, l_srv_token, l_data )
 		RETURNING l_stat, l_reply
 	IF l_stat < 400 THEN
-		CALL newOranisationFromJson( l_reply )
+		CALL newOrganisationFromJson( l_reply )
 	ELSE
 		CALL hmrcLib.errDisp( l_reply )
 	END IF
 END FUNCTION
 --------------------------------------------------------------------------------
 -- insert new Organisation into DB if it doesn't already exist.
-FUNCTION hmrcNewOrganisationToDB( l_rec )
+FUNCTION newOrganisationToDB( l_rec )
 	DEFINE l_rec t_hmrcOrganisations
 	SELECT * FROM hmrcOrganisations WHERE vrn = l_rec.vrn
 	IF STATUS = NOTFOUND THEN
@@ -220,15 +233,18 @@ FUNCTION hmrcNewOrganisationToDB( l_rec )
 ENd FUNCTION
 --------------------------------------------------------------------------------
 -- load example from JSON file
-FUNCTION loadFromJson( l_fileName STRING  )
+--
+-- @param l_fileName filename/path to file with JSON data
+-- @param l_callback the function to process the JSON
+FUNCTION loadFromJson( l_fileName STRING, l_callBack t_callBack_func  )
 	DEFINE l_data TEXT
 -- read JSON file
 	LOCATE l_data IN FILE l_fileName
-	CALL newOranisationFromJson( l_data )
+	CALL l_callBack( l_data )
 END FUNCTION
 --------------------------------------------------------------------------------
--- load example from JSON file
-FUNCTION newOranisationFromJson( l_data STRING  )
+-- new Oranisation JSON data
+FUNCTION newOrganisationFromJson( l_data STRING  )
 	DEFINE l_recJSON t_hmrcOrganisationsJSON
 	DEFINE l_rec t_hmrcOrganisations
 
@@ -245,17 +261,17 @@ FUNCTION newOranisationFromJson( l_data STRING  )
 		ERROR "Organisation missing VRN!"
 		RETURN
 	END IF
-
+	LET m_cur_vatNo = l_rec.vrn
 -- add to the array
 	LET m_orgs[ m_orgs.getLength() + 1 ].* = l_rec.*
 
 -- insert into DB.
-	CALL hmrcNewOrganisationToDB(l_rec.*)
+	CALL newOrganisationToDB(l_rec.*)
 
 END FUNCTION
 --------------------------------------------------------------------------------
 -- get Obligations from the HMRC for the Organisation
-FUNCTION getObligations( l_orgno SMALLINT )
+FUNCTION newObligationsFromHMRC( l_orgno SMALLINT )
 	DEFINE l_url, l_reply STRING
 	DEFINE l_stat SMALLINT
 	DEFINE l_vatno STRING
@@ -276,9 +292,24 @@ FUNCTION getObligations( l_orgno SMALLINT )
 	CALL hmrcRest.request( l_url, m_toks[ l_orgno ].token, "" ) RETURNING l_stat, l_reply
 	IF l_stat < 400 THEN
 		MESSAGE "Processed."
-		CALL disp(SFMT("Process:%1",l_reply))
+		CALL hmrcLib.disp(SFMT("Process:%1",l_reply))
+		CALL newObligationsFromJson( l_reply )
 	ELSE
 		CALL hmrcLib.errDisp( l_reply )
 	END IF
+END FUNCTION
+--------------------------------------------------------------------------------
+-- new Obligations JSON data
+FUNCTION newObligationsFromJson( l_data STRING )
+	DEFINE l_rec RECORD 
+		obligations DYNAMIC ARRAY OF t_obligations
+	END RECORD
+	TRY
+		CALL util.JSON.parse( l_data, l_rec )
+		MESSAGE "New Obligations Loaded"
+	CATCH
+		CALL hmrcLib.errDisp( SFMT("Failed to Parse JSON Obligations %1-%2", STATUS, ERR_GET(STATUS)) )
+		RETURN
+	END TRY
 END FUNCTION
 --------------------------------------------------------------------------------

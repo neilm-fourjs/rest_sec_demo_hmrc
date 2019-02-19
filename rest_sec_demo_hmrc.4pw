@@ -74,7 +74,7 @@
       <File filePath="Demo_gas/hmrcDemo.xcf"/>
       <File filePath="Demo_gas/hmrcGrant.xcf"/>
     </Library>
-    <Application binaryName="hmrcDemo" dependencies="374790773,1822228590" id="1309108153" label="hmrcDemo">
+    <Application binaryName="hmrcDemo" commandLineArguments="RESET" dependencies="374790773,1822228590" id="1309108153" label="hmrcDemo">
       <File filePath="Demo_src/getToken_wc.per"/>
       <File filePath="Demo_src/hmrcDemo.4gl"/>
       <File filePath="Demo_src/hmrcDemo.per"/>
@@ -155,7 +155,7 @@
       <Directory includedFiles="*.42?" label="bin" recursive="false" sourceDirectory="$(ProjectDir)/Demo_bin"/>
       <Directory includedFiles="profile,*.4ad,*.4st" label="etc" recursive="false" sourceDirectory="$(ProjectDir)/etc"/>
       <Directory includedFiles="*.xcf" label="gas" recursive="false" sourceDirectory="$(ProjectDir)/Demo_gas"/>
-      <Directory includedFiles="ac1.json" label="misc" recursive="false" sourceDirectory="$(ProjectDir)"/>
+      <Directory includedFiles="*.json" label="misc" recursive="false" sourceDirectory="$(ProjectDir)"/>
     </Package>
     <Package binaryName="hmrcOpenIDConnect" dependencies="12553495,273277692,481983288,330333794,592927465,68041506,412521500,519656192" label="hmrcOpenIDConnect" platform="Genero Application Server">
       <DynamicProperty name="packageId" value="hmrc_openid"/>

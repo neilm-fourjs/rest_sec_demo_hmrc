@@ -49,6 +49,15 @@ TYPE t_hmrcOrganisationsJSON RECORD
   	eoriNumber VARCHAR(20)
 	END RECORD
 
+TYPE t_obligations RECORD
+		start DATE,
+		end DATE,
+		due DATE,
+		status CHAR(1),
+		periodKey VARCHAR(10),
+		received DATE
+	END RECORD
+
 TYPE t_hmrcAccessToken RECORD
 		vrn VARCHAR(20),
 		token VARCHAR(64), 
