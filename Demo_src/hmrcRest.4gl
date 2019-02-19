@@ -13,7 +13,6 @@ FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLIN
 	END RECORD
 	DEFINE l_reply_data STRING
 
-	LET l_url = fgl_getEnv("HMRC_URL")||l_url
 	CALL disp("URL:"||l_url)
 	LET l_req = com.HttpRequest.Create(l_url)
 	IF l_data IS NULL THEN

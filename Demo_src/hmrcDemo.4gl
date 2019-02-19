@@ -18,7 +18,7 @@ DEFINE m_arr DYNAMIC ARRAY OF RECORD
 	END RECORD
 DEFINE m_getTokenURL, m_clientId, m_secretId STRING
 MAIN
-
+	DEFINE l_orgno SMALLINT
 	LET m_getTokenURL = fgl_getEnv("GRANTURL")
 	LET m_clientId = fgl_getEnv("CLIENT_PUBLIC_ID")
 	LET m_secretId = fgl_getEnv("CLIENT_SECRET_ID")
@@ -40,24 +40,27 @@ MAIN
 
 	DISPLAY ARRAY m_arr TO arr.* ATTRIBUTES(ACCEPT=FALSE, CANCEL=FALSE)
 		BEFORE ROW
+			LET l_orgno = arr_curr()
+			DISPLAY BY NAME m_orgs[ l_orgno ].userId, m_orgs[ l_orgno ].password
+			DISPLAY "" TO l_getTokenURL
 			CALL DIALOG.setActionActive("gettok", FALSE)
 			CALL DIALOG.setActionActive("gettok_wc", FALSE)
 			CALL DIALOG.setActionActive("refreshok", FALSE)
-			IF m_arr[ arr_curr() ].stat = "N" THEN
+			IF m_arr[ l_orgno ].stat = "N" THEN
 				CALL DIALOG.setActionActive("gettok", TRUE)
 				CALL DIALOG.setActionActive("gettok_wc", TRUE)
 			END IF
-			IF m_arr[ arr_curr() ].stat = "E" THEN
+			IF m_arr[ l_orgno ].stat = "E" THEN
 				CALL DIALOG.setActionActive("refreshok", TRUE)
 			END IF
 
 		ON ACTION neworg CALL hmrcNewOrganisation()
 
-		ON ACTION refreshok CALL hmrcRefreshToken(arr_curr())
+		ON ACTION refreshok CALL hmrcRefreshToken(l_orgno)
 
-		ON ACTION gettok CALL getToken(arr_curr())
+		ON ACTION gettok CALL getToken(l_orgno)
 
-		ON ACTION gettok_wc CALL getToken_wc(arr_curr())
+		ON ACTION gettok_wc CALL getToken_wc(l_orgno)
 
 		ON ACTION quit EXIT DISPLAY
 		ON ACTION close EXIT DISPLAY
@@ -106,8 +109,11 @@ END FUNCTION
 --------------------------------------------------------------------------------
 -- get the Token by calling oauth program.
 FUNCTION getToken(l_orgno SMALLINT)
-	LET m_getTokenURL = m_getTokenURL||"?Arg1="||m_orgs[ l_orgno ].vrn
-	CALL ui.Interface.frontCall("standard", "launchURL", [m_getTokenURL], [] )
+	DEFINE l_getTokenURL STRING
+	DISPLAY "OrgNo:",l_orgno
+	LET l_getTokenURL = m_getTokenURL||"?Arg1="||m_orgs[ l_orgno ].vrn
+	DISPLAY BY NAME l_getTokenURL
+	CALL ui.Interface.frontCall("standard", "launchURL", [l_getTokenURL], [] )
 	MENU
 		COMMAND "Grant Done" EXIT MENU
 	END MENU
@@ -116,10 +122,11 @@ END FUNCTION
 --------------------------------------------------------------------------------
 -- get the Token by calling oauth program in a WebComponent
 FUNCTION getToken_wc(l_orgno SMALLINT)
+	DEFINE l_getTokenURL STRING
 	OPEN WINDOW getToken_wc WITH FORM "getToken_wc"
-	LET m_getTokenURL = m_getTokenURL||"?Arg1="||m_orgs[ l_orgno ].vrn
-	DISPLAY BY NAME m_orgs[ l_orgno ].userId, m_orgs[ l_orgno ].password
-	DISPLAY m_getTokenURL TO wc
+	LET l_getTokenURL = m_getTokenURL||"?Arg1="||m_orgs[ l_orgno ].vrn
+	DISPLAY BY NAME m_orgs[ l_orgno ].userId, m_orgs[ l_orgno ].password, l_getTokenURL 
+	DISPLAY l_getTokenURL TO wc
 	MENU
 		COMMAND "Grant Done" EXIT MENU
 		ON ACTION close EXIT MENU
@@ -142,9 +149,9 @@ FUNCTION hmrcRefreshToken(l_orgno SMALLINT)
 		END RECORD
 
 	LET l_req_data = 
-		SFMT( "client_secret=%1&client_id=%2&grant_type=refresh_token&refresh_token=%3", m_secretId, m_clientId, m_toks[ l_orgno ].token_endpoint )
+		SFMT( "client_secret=%1&client_id=%2&grant_type=refresh_token&refresh_token=%3", m_secretId, m_clientId, m_toks[ l_orgno ].refresh_token )
 
-	CALL hmrcRest.request( m_toks[ l_orgno ].token_endpoint, l_req_data, NULL ) RETURNING l_stat, l_res_data
+	CALL hmrcRest.request( m_toks[ l_orgno ].token_endpoint, NULL, l_req_data ) RETURNING l_stat, l_res_data
 
 	TRY
 		CALL hmrcLib.disp(l_res_data)
@@ -152,7 +159,9 @@ FUNCTION hmrcRefreshToken(l_orgno SMALLINT)
 		CALL hmrcLib.disp("Refresh New Token:"||l_refresh_rec.access_token)
 	CATCH
 		CALL hmrcLib.disp("JSON Parse failed!")
+		RETURN
 	END TRY
+
 	IF NOT hmrcLib.updateTokenInDB(l_hmrcToken.*) THEN
 		CALL hmrcLib.errDisp(hmrcLib.m_db_err)
 	ELSE
@@ -164,8 +173,8 @@ END FUNCTION
 FUNCTION hmrcNewOrganisation()
 	DEFINE l_data STRING
 	DEFINE l_stat SMALLINT
-	DEFINE l_reply STRING
-	DEFINE l_srv_token STRING
+	DEFINE l_reply, l_url, l_srv_token STRING
+	LET l_url = fgl_getEnv("HMRC_URL")||"/create-test-user/organisations"
 	LET l_srv_token = fgl_getEnv("SERVER_TOKEN")
 	LET l_data = '
 {
@@ -183,7 +192,7 @@ FUNCTION hmrcNewOrganisation()
     "customs-services"
   ]
 }'
-	CALL hmrcRest.request("/create-test-user/organisations", l_srv_token, l_data )
+	CALL hmrcRest.request(l_url, l_srv_token, l_data )
 		RETURNING l_stat, l_reply
 	IF l_stat < 400 THEN
 		CALL newOranisationFromJson( l_reply )

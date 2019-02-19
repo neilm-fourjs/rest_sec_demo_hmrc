@@ -12,19 +12,22 @@ TABLE
 END -- TABLE
 GRID
 {
-test
-
+User Id:[f001                ]Password:[f002                ]
+[url                                                        ]
 }
 END -- GRID
 END -- VBOX
 
 ATTRIBUTES
+f001 = FORMONLY.userid;
+f002 = FORMONLY.password;
+url = FORMONLY.l_getTokenURL, SCROLL;
 
-a001 = FORMONLY.userId, TITLE="UserID";
-a002 = FORMONLY.userFullName, TITLE="Name";
-a003 = FORMONLY.emailAddress, TITLE="Email";
-a004 = FORMONLY.org_name, TITLE="Organization";
-a005 = FORMONLY.vrn, TITLE="V.R.N.";
-COMBOBOX a06 = FORMONLY.stat,TITLE="Status",ITEMS=(("Y","Valid Token"),("N","No Token"),("E","Expired Token"));
+a001 = FORMONLY.a_userId, TITLE="UserID";
+a002 = FORMONLY.a_userFullName, TITLE="Name";
+a003 = FORMONLY.a_emailAddress, TITLE="Email";
+a004 = FORMONLY.a_org_name, TITLE="Organization";
+a005 = FORMONLY.a_vrn, TITLE="V.R.N.";
+COMBOBOX a06 = FORMONLY.a_stat,TITLE="Status",ITEMS=(("Y","Valid Token"),("N","No Token"),("E","Expired Token"));
 INSTRUCTIONS
-SCREEN RECORD arr (FORMONLY.userId THRU FORMONLY.stat )
+SCREEN RECORD arr (FORMONLY.a_userId THRU FORMONLY.a_stat )

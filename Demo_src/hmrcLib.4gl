@@ -78,7 +78,6 @@ FUNCTION chkTables()
 END FUNCTION
 --------------------------------------------------------------------------------
 FUNCTION updateTokenInDB( l_hmrcToken t_hmrcAccessToken)
-
 	SELECT * FROM hmrcAccessTokens WHERE vrn = l_hmrcToken.vrn
 	IF STATUS = NOTFOUND THEN
 		INSERT INTO hmrcAccessTokens VALUES( l_hmrcToken.* )

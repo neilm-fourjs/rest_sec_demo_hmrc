@@ -7,9 +7,6 @@ IMPORT FGL hmrcLib
 
 &include "hmrcLib.inc"
 
-CONSTANT C_CON_TIMEOUT = 5
-
-DEFINE m_secretId, m_clientId STRING
 DEFINE m_msg STRING
 MAIN
 	DEFINE l_url STRING
@@ -28,10 +25,12 @@ MAIN
 	LET l_url = fgl_getEnv("HMRC_URL")
 	LET l_url = NVL(l_url, "https://test-api.service.hmrc.gov.uk")
 
-	LET m_clientId = fgl_getEnv("CLIENT_PUBLIC_ID")
-	LET m_secretId = fgl_getEnv("CLIENT_SECRET_ID")
-
 	LET l_hmrcToken.vrn = ARG_VAL(1)
+	IF l_hmrcToken.vrn IS NULL OR LENGTH(l_hmrcToken.vrn) < 2 THEN
+		LET m_msg = "Invalid Args!"
+		CALL prog_finish()
+		EXIT PROGRAM
+	END IF
 	LET l_hmrcToken.token = fgl_getEnv("OIDC_ACCESS_TOKEN")
 	LET l_hmrcToken.refresh_token = fgl_getEnv("OIDC_REFRESH_TOKEN")
 	LET l_hmrcToken.token_endpoint = fgl_getEnv("OIDC_IDP_TOKEN_ENDPOINT")
