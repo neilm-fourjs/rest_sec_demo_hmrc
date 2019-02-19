@@ -2,34 +2,9 @@ IMPORT com
 
 CONSTANT C_CON_TIMEOUT = 5
 
-FUNCTION createOrginasation()
-	DEFINE l_data STRING
-	DEFINE l_stat SMALLINT
-	DEFINE l_reply STRING
-	DEFINE l_srv_token STRING
-	LET l_srv_token = fgl_getEnv("SERVER_TOKEN")
-	LET l_data = '
-{
-  "serviceNames": [
-    "corporation-tax",
-    "paye-for-employers",
-    "submit-vat-returns",
-    "national-insurance",
-    "self-assessment",
-    "mtd-income-tax",
-    "mtd-vat",
-    "lisa",
-    "secure-electronic-transfer",
-    "relief-at-source",
-    "customs-services"
-  ]
-}'
-	CALL rest_hmrc2("/create-test-user/organisations", l_srv_token, l_data )
-		RETURNING l_stat, l_reply
-
-END FUNCTION
 --------------------------------------------------------------------------------
-FUNCTION rest_hmrc2( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLINT, STRING)
+-- Do a RESTFULL call.
+FUNCTION request( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMALLINT, STRING)
 	DEFINE l_req com.HttpRequest
 	DEFINE l_resp com.HTTPResponse
 	DEFINE l_info RECORD
@@ -101,6 +76,3 @@ FUNCTION rest_hmrc2( l_url STRING, l_token STRING, l_data STRING ) RETURNS (SMAL
 	RETURN l_info.status, l_reply_data
 END FUNCTION
 --------------------------------------------------------------------------------
-FUNCTION disp( l_msg STRING )
-	DISPLAY l_msg
-ENd FUNCTION

@@ -49,7 +49,7 @@ TYPE t_hmrcOrganisationsJSON RECORD
   	eoriNumber VARCHAR(20)
 	END RECORD
 
-TYPE t_hmrcAccessTokens RECORD
+TYPE t_hmrcAccessToken RECORD
 		vrn VARCHAR(20),
 		token VARCHAR(64), 
 		refresh_token VARCHAR(64),

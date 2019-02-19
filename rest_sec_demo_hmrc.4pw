@@ -63,7 +63,7 @@
   </Settings>
   <LanguageList version="1.0"/>
   <PlatformList version="1.0"/>
-  <Group environment="value:BASE=..,value:GRANTURL=https://generodemo.hopto.org/g/ua/r/hmrcGrant,value:FGLPROFILE=../etc/profile,value:DBNAME=njm_demo310" label="HMRC_Demo" language="Genero" targetDirectory="$(ProjectDir)/Demo_bin">
+  <Group environment="value:HMRC_URL=https://test-api.service.hmrc.gov.uk,value:BASE=..,value:GRANTURL=https://generodemo.hopto.org/g/ua/r/hmrcGrant,value:FGLPROFILE=../etc/profile,value:DBNAME=njm_demo310" label="HMRC_Demo" language="Genero" targetDirectory="$(ProjectDir)/Demo_bin">
     <Library binaryName="etc" id="1822228590" label="etc">
       <File filePath="etc/profile"/>
     </Library>
@@ -72,6 +72,7 @@
       <File filePath="Demo_gas/hmrcGrant.xcf"/>
     </Library>
     <Application binaryName="hmrcDemo" dependencies="374790773" id="1309108153" label="hmrcDemo">
+      <File filePath="Demo_src/getToken_wc.per"/>
       <File filePath="Demo_src/hmrcDemo.4gl"/>
       <File filePath="Demo_src/hmrcDemo.per"/>
     </Application>
@@ -80,9 +81,12 @@
       <File filePath="Demo_src/hmrcGrant.per"/>
     </Application>
     <Library binaryName="hmrcLib" id="374790773" label="hmrcLib">
+      <File filePath="etc/default.4ad"/>
+      <File filePath="etc/default.4st"/>
+      <File filePath="Demo_src/hmrcLib.4gl"/>
       <File filePath="Demo_src/hmrcLib.inc"/>
       <File filePath="Demo_src/hmrcRest.4gl"/>
-      <File filePath="../../../../../opt/fourjs/all/my_github/rest_sec_demo_hmrc/etc/njm_demo310.4db"/>
+      <File filePath="etc/njm_demo310.4db"/>
     </Library>
   </Group>
   <Group label="HMRC_Test" language="Genero">
@@ -93,7 +97,7 @@
       <File filePath="src/hmrc_creUser.4gl"/>
     </Application>
     <Application binaryName="hmrc_test" id="-1689990160" label="hmrc_test">
-      <File filePath="../../../Customers/ConnectIt/hmrc_test/src/hmrc_test.per"/>
+      <File filePath="src/hmrc_test.per"/>
     </Application>
     <Library binaryName="rest_sec" id="1602646132" label="rest_sec">
       <File filePath="src/rest_sec.4gl"/>
@@ -148,7 +152,7 @@
       <DynamicProperty name="packageId" value="hmrcDemo"/>
       <DynamicProperty name="packageLabel" value="hmrcDemo"/>
       <Directory includedFiles="*.42?" label="bin" recursive="false" sourceDirectory="$(ProjectDir)/Demo_bin"/>
-      <Directory includedFiles="profile" label="etc" recursive="false" sourceDirectory="$(ProjectDir)/etc"/>
+      <Directory includedFiles="profile,*.4ad,*.4st" label="etc" recursive="false" sourceDirectory="$(ProjectDir)/etc"/>
       <Directory includedFiles="*.xcf" label="gas" recursive="false" sourceDirectory="$(ProjectDir)/Demo_gas"/>
       <Directory includedFiles="ac1.json" label="misc" recursive="false" sourceDirectory="$(ProjectDir)"/>
     </Package>
