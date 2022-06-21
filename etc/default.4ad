@@ -45,7 +45,11 @@ Property of Four Js*
 
   <ActionDefault name="neworg" text="New Organisation" image="fa-user-plus" contextMenu="no"/>
   <ActionDefault name="refreshok" text="Refresh Token for Organisation" image="fa-refresh" contextMenu="no"/>
+  <ActionDefault name="hellotest" text="Hello Test" image="fa-smile-o" contextMenu="no"/>
+  <ActionDefault name="mantoken" text="Manually Enter Token" image="fa-bug" contextMenu="no"/>
+  <ActionDefault name="clrtoken" text="Clear Token" image="fa-eraser" contextMenu="no"/>
   <ActionDefault name="gettok" text="Get Token for Organisation" image="fa-ticket" contextMenu="no"/>
+  <ActionDefault name="getacctok" text="Get Access Token" image="fa-ticket" contextMenu="no"/>
   <ActionDefault name="gettok_wc" text="Get Token for Organisation WC" image="fa-ticket" contextMenu="no"/>
   <ActionDefault name="obligations" text="Get Obligations" image="fa-list" contextMenu="no"/>
 

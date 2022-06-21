@@ -4,7 +4,7 @@
 	<RESOURCE Id="res.secretId" Source="INTERNAL"><!-- place your client secret id here --></RESOURCE>
 	<RESOURCE Id="res.serverToken" Source="INTERNAL"><!-- place your Server Token here --></RESOURCE>
 	<RESOURCE Id="res.service.url" Source="INTERNAL">https://test-api.service.hmrc.gov.uk</RESOURCE>
-	<RESOURCE Id="res.grant.url" Source="INTERNAL">https://generodemo.hopto.org/g/ua/r/hmrcGrant</RESOURCE>
+	<RESOURCE Id="res.grant.url" Source="INTERNAL">https://generodemos.dynu.net/z/ua/r/hmrcGrant1</RESOURCE>
 	<EXECUTION>
 		<ENVIRONMENT_VARIABLE Id="BASE">.</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="FGLPROFILE">profile</ENVIRONMENT_VARIABLE>

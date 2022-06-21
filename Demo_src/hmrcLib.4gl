@@ -111,15 +111,16 @@ FUNCTION updateTokenInDB( l_hmrcToken t_hmrcAccessToken)
 	IF STATUS = NOTFOUND THEN
 		INSERT INTO hmrcAccessTokens VALUES( l_hmrcToken.* )
 		IF STATUS != 0 THEN
-			LET m_db_err = "New Token insert failed:",STATUS,":",SQLERRMESSAGE
+			LET m_db_err = SFMT("New Token for '%1' insert failed: %2 %3", l_hmrcToken.vrn, STATUS, SQLERRMESSAGE)
 			RETURN FALSE
 		END IF
 	ELSE
 		UPDATE hmrcAccessTokens SET hmrcAccessTokens.* = l_hmrcToken.* WHERE vrn = l_hmrcToken.vrn
 		IF STATUS != 0 THEN
-			LET m_db_err = "New Token update failed:",STATUS,":",SQLERRMESSAGE
+			LET m_db_err = SFMT("New Token for '%1' update failed: %2 %3", l_hmrcToken.vrn, STATUS, SQLERRMESSAGE)
 			RETURN FALSE
 		END IF
 	END IF
+    DISPLAY SFMT("New Token for '%1' Stored.", l_hmrcToken.vrn)
 	RETURN TRUE
 ENd FUNCTION

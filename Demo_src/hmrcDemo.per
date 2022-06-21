@@ -16,7 +16,7 @@ User Id: [f001               ]            <G "Obligations"     >
 Password:[f002               ]               From:[f003      ]
 Token:   [t001                           ]   To:  [f004      ]
 Expires: [t002               ]               Stat:[f005      ]
-                                          <                    >
+Refresh: [t003                           ]<                    >
 [url                                                           ]
 }
 END -- GRID
@@ -27,6 +27,7 @@ f001 = FORMONLY.userid;
 f002 = FORMONLY.password;
 t001 = FORMONLY.token;
 t002 = FORMONLY.token_expires;
+t003 = FORMONLY.refresh_token;
 
 DATEEDIT f003 = FORMONLY.l_from;
 DATEEDIT f004 = FORMONLY.l_to;
@@ -39,6 +40,6 @@ a002 = FORMONLY.a_userFullName, TITLE="Name";
 a003 = FORMONLY.a_emailAddress, TITLE="Email";
 a004 = FORMONLY.a_org_name, TITLE="Organization";
 a005 = FORMONLY.a_vrn, TITLE="V.R.N.";
-COMBOBOX a06 = FORMONLY.a_stat,TITLE="Status",ITEMS=(("Y","Valid Token"),("N","No Token"),("E","Expired Token"));
+COMBOBOX a06 = FORMONLY.a_stat,TITLE="Status",ITEMS=(("Y","Valid Token"),("N","No Token"),("E","Expired Token"),("M","Manual"));
 INSTRUCTIONS
 SCREEN RECORD arr (FORMONLY.a_userId THRU FORMONLY.a_stat )
