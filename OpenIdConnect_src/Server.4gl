@@ -1,20 +1,19 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
-#
+# 
 # Four Js and its suppliers do not warrant or guarantee that these samples
 # are accurate and suitable for your purposes. Their inclusion is purely for
 # information purposes only.
 # FOURJS_END_COPYRIGHT
 #
 
-IMPORT COM
-IMPORT UTIL
-IMPORT Security
-
+IMPORT com
+IMPORT util
+IMPORT security
 IMPORT FGL Logs
 IMPORT FGL DBase
 IMPORT FGL JWT
@@ -54,7 +53,7 @@ MAIN
   END FOR
 
   # Initialize log
-  CALL Logs.LOG_INIT(p_debug,p_path,"hmrcOIDC.log")
+  CALL Logs.LOG_INIT(p_debug,p_path,"OIDC.log")
   CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Main", SFMT("Started FGLWSDEBUG=%1 FGLSQLDEBUG=%2", fgl_getEnv("FGLWSDEBUG"),fgl_getEnv("FGLSQLDEBUG")))
 
   # Initialize DB
@@ -89,7 +88,7 @@ MAIN
         LET ind = path.getIndexOf(HTTPHelper.C_OIDC_PATH,1)
         IF ind<1 THEN
           CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-          CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_BAD_REQUEST))
+          CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_BAD_REQUEST,baseurl))
           CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Request",remoteip,"invalid request")
         ELSE
 
@@ -122,8 +121,7 @@ MAIN
           IF path IS NOT NULL THEN
             LET baseURL = baseURL||path
           END IF
-
-          CALL DispatchService(req, baseURL, operation)
+          CALL DispatchService(req, HTTPHelper.RemoveDefaultPortFromURL(baseURL), operation)
         END IF
         CALL Logs.LOG_EVENT(Logs.C_LOG_ACCESS,"Request",remoteip,"response returned")
       END IF
@@ -161,7 +159,7 @@ FUNCTION DispatchService(req, baseURL, operation)
   LET ind = operation.getIndexOf("/",1)
   IF ind>0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","DispatchService","invalid path")
   ELSE
     # Retrieve decoded URL query string
@@ -182,7 +180,7 @@ FUNCTION DispatchService(req, baseURL, operation)
         CALL SPManager.ProcessAuthenticationCallback(req, baseURL, query)
       OTHERWISE
         CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-        CALL req.sendTextResponse(501,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_NOT_IMPLEMENTED))
+        CALL req.sendTextResponse(501,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_NOT_IMPLEMENTED,baseurl))
         CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","DispatchService","unknown service '"||operation||"'")
     END CASE
   END IF
@@ -202,47 +200,48 @@ FUNCTION Delegate(req, baseURL, query)
 
   IF query.getLength()==0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","Delegate","Query is missing")
     RETURN
   END IF
   IF query[1].name!="url" OR query[1].VALUE IS NULL THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","Delegate","Query URL is missing")
   ELSE
 
-    LET originalURL = query[1].VALUE
+    # Remove default port
+    LET originalURL = HTTPHelper.RemoveDefaultPortFromURL(query[1].VALUE)
 
     # Remove url param
     CALL query.deleteElement(1)
 
     IF originalURL.getIndexOf(C_RESUME_URL,1)>1 THEN
       # Resume URL
-      CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Delegate Resume URL",originalURL)
+      CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Resume URL",originalURL)
+
       CALL SPManager.HasAccess(req, originalURL, query) RETURNING ok, _found, attrs
       IF ok THEN
         CALL SPManager.Resume(req)
       ELSE
-        CALL SPManager.Forbid(req)
+        CALL SPManager.Forbid(req, baseurl)
       END IF
 
     ELSE
-
       CALL SPManager.HasAccess(req, originalURL, query) RETURNING ok, _found, attrs
       IF ok THEN
         # ACCESS IS GRANTED
-    	  CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Delegate URL OK",originalURL)
+        CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Delegate URL OK",originalURL)
         CALL SPManager.StartProxy(req, HTTPHelper.BuildQueryEncodedURL(originalURL, query) , attrs)
       ELSE
         # ACCESS DENIED
         IF NOT _found THEN
           # NOT COOKIE FOUND
-    	  	CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Delegate URL DENIED StartAuthentication",originalURL)
+          CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Delegate StartAuthentication",originalURL)
           CALL SPManager.StartAuthentication(req, baseURL, HTTPHelper.BuildQueryEncodedURL(originalURL, query) )
         ELSE
-    	  	CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Delegate URL DENIED FORBID",originalURL)
-          CALL SPManager.ForbidAccess(req)
+          CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Server","Delegate ForbidAccess",originalURL)
+          CALL SPManager.ForbidAccess(req, baseurl)
         END IF
       END IF
     END IF
@@ -263,7 +262,7 @@ FUNCTION DoPrompt(req, baseURL, query)
 
   IF query.getLength()==0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","Prompt","Query is missing")
     RETURN
   END IF
@@ -272,7 +271,7 @@ FUNCTION DoPrompt(req, baseURL, query)
   LET ind = query.search("name","prompt")
   IF ind==0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","Prompt","prompt is missing")
     RETURN
   ELSE
@@ -283,7 +282,7 @@ FUNCTION DoPrompt(req, baseURL, query)
   LET ind = query.search("name","session")
   IF ind==0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","Prompt","session is missing")
     RETURN
   ELSE
@@ -294,7 +293,7 @@ FUNCTION DoPrompt(req, baseURL, query)
   LET ind = query.search("name","timeout")
   IF ind==0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","Prompt","timeout is missing")
     RETURN
   ELSE
@@ -317,7 +316,7 @@ FUNCTION DoLogoutGet(req, baseURL, query)
 
   IF query.getLength()==0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","Logout","Query is missing")
     RETURN
   END IF
@@ -327,7 +326,7 @@ FUNCTION DoLogoutGet(req, baseURL, query)
   LET ind = query.search("name","gid")
   IF ind==0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","Logout","gid is missing")
   ELSE
     CALL SPManager.DoLogout(req, baseURL, query[ind].value)
@@ -350,7 +349,7 @@ FUNCTION DoLogoutPost(req, baseURL, query)
 
   IF query.getLength()!=0 THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","DoLogoutPost","Error: No query string expected")
     RETURN
   END IF
@@ -362,7 +361,7 @@ FUNCTION DoLogoutPost(req, baseURL, query)
     LET ind = formdata.search("name","gid")
     IF ind==0 THEN
       CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-      CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+      CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
       CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","DoLogoutPost","Error : gid is missing")
       RETURN
     ELSE
@@ -372,22 +371,22 @@ FUNCTION DoLogoutPost(req, baseURL, query)
       IF ind>0 THEN
         CASE formdata[ind].VALUE
           WHEN "yes"
-            CALL SPManager.DoQueryLogout(req, uuid, TRUE)
+            CALL SPManager.DoQueryLogout(req, baseurl, uuid, TRUE)
             RETURN
           WHEN "no"
-            CALL SPManager.DoQueryLogout(req, uuid, FALSE)
+            CALL SPManager.DoQueryLogout(req, baseurl, uuid, FALSE)
             RETURN
         END CASE
       END IF
     END IF
 
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_BAD_REQUEST,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","DoLogoutPost","Bad request")
 
   CATCH
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_INTERNAL_ERROR))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_INTERNAL_ERROR,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"Server","DoLogoutPost","Internal error")
   END TRY
 

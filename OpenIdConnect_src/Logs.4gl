@@ -1,7 +1,7 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
 # 
@@ -11,8 +11,8 @@
 # FOURJS_END_COPYRIGHT
 #
 
-IMPORT COM
-IMPORT XML
+IMPORT com
+IMPORT xml
 IMPORT os
 
 PUBLIC CONSTANT C_LOG_ERROR     = 1
@@ -56,9 +56,9 @@ PUBLIC FUNCTION LOG_INIT(lvl, path, f)
         DISPLAY "ERROR: Unable to create log file in ",fullpath
         EXIT PROGRAM(1)
     END IF
-    CALL my_startlog(fullpath||"/"||f)
+    CALL my_startlog(fullpath||"/my"||f)
   ELSE
-    CALL my_startlog(f)
+    CALL my_startlog("my"||f)
   END IF
   IF level IS NOT NULL THEN
     CALL my_errorlog("MSGLOG : "||pid||" - [Logs] \"INIT\" with level='"||level||"' done")

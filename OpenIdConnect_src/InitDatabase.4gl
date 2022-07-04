@@ -1,7 +1,7 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
 # 
@@ -31,7 +31,7 @@ MAIN
     authorization_endpoint  VARCHAR(255) NOT NULL, # REQUIRED. URL of the OP's OAuth 2.0 Authorization Endpoint [OpenID.Core].
     token_endpoint          VARCHAR(255) NOT NULL, # URL of the OP's OAuth 2.0 Token Endpoint [OpenID.Core]. This is REQUIRED unless only the Implicit Flow is used.
     userinfo_endpoint       VARCHAR(255),          # RECOMMENDED. URL of the OP's UserInfo Endpoint [OpenID.Core]. This URL MUST use the https scheme and MAY contain port, path, and query parameter components.
-    jwks_uri                VARCHAR(255),          # REQUIRED.(NULL=>OAuth) URL of the OP's JSON Web Key Set [JWK] document. This contains the signing key(s) the RP uses to validate signatures from the OP. The JWK Set MAY also contain the Server's encryption key(s), which are used by RPs to encrypt requests to the Server. When both signing and encryption keys are made available, a use (Key Use) parameter value is REQUIRED for all keys in the referenced JWK Set to indicate each key's intended usage. Although some algorithms allow the same key to be used for both signatures and encryption, doing so is NOT RECOMMENDED, as it is less secure. The JWK x5c parameter MAY be used to provide X.509 representations of keys provided. When used, the bare key values MUST still be present and MUST match those in the certificate. END RECORD
+    jwks_uri                VARCHAR(255),          # REQUIRED. URL of the OP's JSON Web Key Set [JWK] document. This contains the signing key(s) the RP uses to validate signatures from the OP. The JWK Set MAY also contain the Server's encryption key(s), which are used by RPs to encrypt requests to the Server. When both signing and encryption keys are made available, a use (Key Use) parameter value is REQUIRED for all keys in the referenced JWK Set to indicate each key's intended usage. Although some algorithms allow the same key to be used for both signatures and encryption, doing so is NOT RECOMMENDED, as it is less secure. The JWK x5c parameter MAY be used to provide X.509 representations of keys provided. When used, the bare key values MUST still be present and MUST match those in the certificate. END RECORD
     end_session_endpoint    VARCHAR(255),          # OPTIONAL. URL to logout from OpenID Provider
     is_oauth2               BOOLEAN,
     UNIQUE (issuer)
@@ -59,7 +59,7 @@ MAIN
     uuid VARCHAR(36) NOT NULL,
     session_uuid VARCHAR(36) NOT NULL,
     path VARCHAR(255) NOT NULL,
-    expires DATE NOT NULL,
+    expires DATETIME YEAR TO SECOND NOT NULL,
     PRIMARY KEY(uuid, session_uuid)
   )
   DISPLAY "done..."

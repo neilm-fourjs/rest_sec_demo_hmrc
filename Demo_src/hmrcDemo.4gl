@@ -43,6 +43,7 @@ MAIN
 	OPEN FORM hmrcDemo FROM "hmrcDemo"
 	DISPLAY FORM hmrcDemo
 
+    DISPLAY "Time: ", CURRENT
 	IF NOT connectToDB() THEN
 		CALL fgl_winMessage("Error", hmrcLib.m_db_err, "exclamation")
 		EXIT PROGRAM

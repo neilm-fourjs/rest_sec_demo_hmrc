@@ -1,10 +1,10 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
-#
+# 
 # Four Js and its suppliers do not warrant or guarantee that these samples
 # are accurate and suitable for your purposes. Their inclusion is purely for
 # information purposes only.
@@ -12,7 +12,7 @@
 #
 
 IMPORT com
-IMPORT XML
+IMPORT xml
 IMPORT FGL Logs
 IMPORT FGL Discovery
 
@@ -57,15 +57,16 @@ FUNCTION GetOAuthFromIssuer(p_issuer)
   IF p_issuer IS NULL THEN
     RETURN idp.*
   END IF
-  TRY
-    SELECT *
+  SELECT *
     INTO idp.*
     FROM fjs_oidc_provider
-    WHERE issuer == p_issuer AND jwks_uri IS NULL
-    CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"IdPManager","GetOAuthFromIssuer",SFMT("Found issuer %1",p_issuer))
-  CATCH
+    WHERE issuer == p_issuer AND is_oauth2 == TRUE
+  IF sqlca.sqlcode == NOTFOUND THEN
+    INITIALIZE idp TO NULL
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"IdPManager","GetOAuthFromIssuer",SFMT("No issuer %1 found",p_issuer))
-  END TRY
+  ELSE
+    CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"IdPManager","GetOAuthFromIssuer",SFMT("Found issuer %1",p_issuer))
+  END IF
   RETURN idp.*
 END FUNCTION
 
@@ -110,7 +111,7 @@ FUNCTION GetIdPFromIssuer(p_issuer)
     # Return IDP data
     RETURN idp.*
   ELSE
-    IF sqlca.sqlcode = 100 THEN
+    IF sqlca.sqlcode = NOTFOUND THEN
       # NOT FOUND, retrieve metadata from net
       CALL DiscoverIdPFromAccount(p_issuer) RETURNING idp.ID, meta.*
       IF idp.ID IS NOT NULL THEN

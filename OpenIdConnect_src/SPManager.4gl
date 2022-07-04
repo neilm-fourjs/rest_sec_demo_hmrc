@@ -1,18 +1,18 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
-#
+# 
 # Four Js and its suppliers do not warrant or guarantee that these samples
 # are accurate and suitable for your purposes. Their inclusion is purely for
 # information purposes only.
 # FOURJS_END_COPYRIGHT
 #
 IMPORT com
-IMPORT XML
-IMPORT Util
+IMPORT xml
+IMPORT util
 IMPORT FGL Utils
 IMPORT FGL Logs
 IMPORT FGL Access
@@ -37,6 +37,22 @@ PRIVATE CONSTANT C_PROMPT_QUERY           = "PROMPT_QUERY"
 PRIVATE CONSTANT C_LOCALHOST_URI        = "localhost"
 PRIVATE CONSTANT C_LOCALHOST_IDP        = "/ws/r/services/GeneroIdentityProvider"
 
+PRIVATE CONSTANT C_HTTPGetBody = "<html><head><title>Genero OIDC Redirection</title></head>\
+                                  <body onload=\"document.getElementById('form').submit();\">\
+                                  This page will automatically redirect you to your identity provider.\
+                                  If you are not immediately redirected, click the submit button below.\
+                                  <form id=\"form\" action=\"$(URL)\" method=\"get\">
+                                  <input type=\"submit\" value=\"submit\" />\
+                                  </form></body></html>"
+
+PRIVATE CONSTANT C_HTTPPostBody = "<html><head><title>Genero OIDC Redirection</title></head>\
+                                  <body onload=\"document.getElementById('form').submit();\">\
+                                  This page will automatically redirect you to your identity provider.\
+                                  If you are not immediately redirected, click the submit button below.\
+                                  <form id=\"form\" action=\"$(URL)\" method=\"post\">
+                                  <input type=\"submit\" value=\"submit\" />\
+                                  </form></body></html>"
+
 #
 # Process OpenIDConnect authentication from callback request
 #
@@ -57,7 +73,7 @@ FUNCTION ProcessAuthenticationCallback(req, baseurl, query)
   IF query.getLength()==0 THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","CheckAuthenticationResponse","No query string")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
     RETURN
   END IF
 
@@ -66,7 +82,7 @@ FUNCTION ProcessAuthenticationCallback(req, baseurl, query)
       WHEN "error"
         CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","CheckAuthenticationResponse",query[ind].value)
         CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-        CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED))
+        CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseurl))
         RETURN
       WHEN "code"
         LET code = query[ind].value
@@ -79,7 +95,7 @@ FUNCTION ProcessAuthenticationCallback(req, baseurl, query)
   IF code IS NULL OR state IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","CheckAuthenticationResponse","code or state is missing")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
   END IF
 
   # Ensure state has been encountered previously
@@ -87,7 +103,7 @@ FUNCTION ProcessAuthenticationCallback(req, baseurl, query)
   IF sess_uuid IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","CheckAuthenticationResponse","state error")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
     RETURN
   END IF
 
@@ -95,7 +111,7 @@ FUNCTION ProcessAuthenticationCallback(req, baseurl, query)
   IF sess.provider_id IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","CheckAuthenticationResponse","authentication param error")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
     FREE sess.id_token # BLOB must be released
     RETURN
   END IF
@@ -105,7 +121,7 @@ FUNCTION ProcessAuthenticationCallback(req, baseurl, query)
   IF idp.Issuer IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","CheckAuthenticationResponse","Issuer is missing")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
     FREE sess.id_token # BLOB must be released
     RETURN
   END IF
@@ -147,12 +163,23 @@ FUNCTION ProcessOAuth2Callback(req, baseURL, idp, sess, app_url, code)
 
   # Retrieve mandatory subject identifier
   LET identifier = base.Application.getResourceEntry("oidc.oauth.subject.identifier")
+  IF identifier.equalsIgnoreCase("<none>") THEN
+    # Skip subject
+    LET identifier = NULL
+  END IF
 
   # OAuth2
-  CALL OIDConnect.ClientSendCode(idp.*,baseURL||HTTPHelper.C_OIDC_PATH||HTTPHelper.C_OIDC_REDIRECT,code,sess.pub_id,sess.secret_id) RETURNING ok,json
+  CASE base.Application.getResourceEntry("oidc.oauth.request.format")
+    WHEN "url-encoded"
+        CALL OIDConnect.ClientSendCode(idp.*,baseURL||HTTPHelper.C_OIDC_PATH||HTTPHelper.C_OIDC_REDIRECT,code,sess.pub_id,sess.secret_id) RETURNING ok,json
+    WHEN "json"
+        CALL OIDConnect.ClientSendCodeJson(idp.*,baseURL||HTTPHelper.C_OIDC_PATH||HTTPHelper.C_OIDC_REDIRECT,code,sess.pub_id,sess.secret_id) RETURNING ok,json
+    OTHERWISE
+        CALL OIDConnect.ClientSendCode(idp.*,baseURL||HTTPHelper.C_OIDC_PATH||HTTPHelper.C_OIDC_REDIRECT,code,sess.pub_id,sess.secret_id) RETURNING ok,json
+  END CASE
   IF NOT ok THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
     RETURN
   END IF
 
@@ -171,21 +198,36 @@ FUNCTION ProcessOAuth2Callback(req, baseURL, idp, sess, app_url, code)
       WHEN "id_token"
         LET token.id_token = json.get(n)
       OTHERWISE
-        IF json.getType(n)=="OBJECT" THEN
-          LET child = json.get(n)
-          IF child.has(identifier) AND idp.userinfo_endpoint IS NULL THEN
-            # Decode json token as attributes and to get user id from token
-            CALL OIDConnect.JsonObjectToAttributes(child, attrs)
-          END IF
-        END  IF
+        IF identifier IS NOT NULL THEN
+          IF json.getType(n)=="OBJECT" THEN
+            LET child = json.get(n)
+            IF child.has(identifier) AND idp.userinfo_endpoint IS NULL THEN
+              # Decode json token as attributes and to get user id from token
+              CALL OIDConnect.JsonObjectToAttributes(child, attrs)
+            END IF
+          END  IF
+        END IF
     END CASE
   END FOR
+
+  IF idp.jwks_uri IS NOT NULL THEN
+    # NOTE : do not need to check access_token expiration (token.expire)
+    #         as it is used immediatly
+    CALL OIDConnect.CheckTokenValidity(sess.pub_id,idp.*,token.*) RETURNING ok, subject, scopes
+    IF NOT ok THEN
+      CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
+      CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_TOKEN,baseURL))
+      RETURN
+    END IF
+  ELSE
+    CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","ProcessOAuth2Callback","Warning no key to verify token signature")
+  END IF
 
   # Ensure there is an access_token (otherwise fail)
   IF token.access_token IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","ProcessOAuth2Callback","No access_token found")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
     RETURN
   END IF
 
@@ -201,24 +243,29 @@ FUNCTION ProcessOAuth2Callback(req, baseURL, idp, sess, app_url, code)
 
   END IF
 
-  # Retrieve user subject
-	CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","ProcessOAuth2Callback",SFMT("looking for %1",identifier))
-  LET ind = attrs.search("name",identifier)
-  IF ind>0 THEN
-    LET subject = attrs[ind].value
+  # Handle user identifier
+  IF identifier IS NULL THEN
+    # skip identifier step
+    LET subject = "<none>"
+    CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","ProcessOAuth2Callback","Skip subject")
+  ELSE
+    # Retrieve user subject
+    LET ind = attrs.search("name",identifier)
+    IF ind>0 THEN
+      LET subject = attrs[ind].value
+    END IF
   END IF
 
   IF subject IS NULL THEN
-    CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","ProcessOAuth2Callback",SFMT("No '%1' found",identifier))
---    CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
---    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
---    RETURN
-		LET subject = "none"
+    CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","ProcessOAuth2Callback","No id found")
+    CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
+    RETURN
   END IF
 
   IF app_url.getIndexOf(HTTPHelper.C_RESUME_URL,1)>1 THEN
     # Resume URL
-    CALL GrantResume(req, sess.*, subject, app_url)
+    CALL GrantResume(req, baseurl, sess.*, subject, app_url)
   ELSE
 
     # Set OIDC_TOKEN_ENDPOINT
@@ -265,7 +312,7 @@ FUNCTION ProcessOpenIDCallback(req, baseURL, idp, sess, app_url, code)
   CALL OIDConnect.ClientSendCodeForBearerToken(idp.*,baseURL||HTTPHelper.C_OIDC_PATH||HTTPHelper.C_OIDC_REDIRECT,code,sess.pub_id,sess.secret_id) RETURNING ok,token.*
   IF NOT ok THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_PROTOCOL,baseurl))
     RETURN
   END IF
 
@@ -274,14 +321,14 @@ FUNCTION ProcessOpenIDCallback(req, baseURL, idp, sess, app_url, code)
   CALL OIDConnect.CheckTokenValidity(sess.pub_id,idp.*,token.*) RETURNING ok, subject, scopes
   IF NOT OK THEN
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_TOKEN))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_TOKEN,baseurl))
     RETURN
   END IF
 
 
   IF app_url.getIndexOf(HTTPHelper.C_RESUME_URL,1)>1 THEN
     # Resume URL
-    CALL GrantResume(req, sess.*, subject, app_url)
+    CALL GrantResume(req, baseurl, sess.*, subject, app_url)
   ELSE
 
     # OIDC: Retrieve user info if access token
@@ -317,8 +364,9 @@ FUNCTION ProcessOpenIDCallback(req, baseURL, idp, sess, app_url, code)
 END FUNCTION
 
 PUBLIC
-FUNCTION GrantResume(req, session, sub, resume_url)
+FUNCTION GrantResume(req, baseurl, session, sub, resume_url)
   DEFINE  req       com.HttpServiceRequest
+  DEFINE  baseurl     STRING
   DEFINE  session     Session.SessionType
   DEFINE  resume_url  STRING
   DEFINE  sub         STRING
@@ -330,6 +378,7 @@ FUNCTION GrantResume(req, session, sub, resume_url)
   DEFINE  query       STRING
   DEFINE  ua_session  STRING
   DEFINE  ind         INTEGER
+  DEFINE  redirectURL STRING
   DEFINE  cookies     WSHelper.WSServerCookiesType
 
   CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantResume",resume_url)
@@ -340,7 +389,7 @@ FUNCTION GrantResume(req, session, sub, resume_url)
   IF ind<1 THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","GrantResume","Cannot extract session from "||path)
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseurl))
     RETURN
   ELSE
     LET ua_session = path.subString(ind+HTTPHelper.C_RESUME_URL.getLength(),path.getLength())
@@ -349,23 +398,54 @@ FUNCTION GrantResume(req, session, sub, resume_url)
   IF session.subject != sub THEN
     # compare sub with auth_id subject
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseurl))
     RETURN
   END IF
 
-  # Set Access cookie and HTTP redirection
-  LET uuid = Access.CreateToken(resume_url,NULL,req.getRequestHeader(HTTPHelper.C_X_FOURJS_REMOTE_ADDR))
-  LET cookies[1].name = HTTPHelper.C_COOKIE_OIDC
-  LET cookies[1].value = uuid
-  LET cookies[1].path = path
-  LET cookies[1].domain = domain
-  LET cookies[1].httpOnly = TRUE
-  CALL req.setResponseCookies(cookies)
   CALL req.setResponseHeader(HTTPHelper.C_HTTP_PRAGMA,HTTPHelper.C_HTTP_NO_CACHE)
   CALL req.setResponseHeader(HTTPHelper.C_HTTP_CACHE_CONTROL,HTTPHelper.C_HTTP_NO_CACHE||", "||HTTPHelper.C_HTTP_NO_STORE)
-  CALL req.setResponseHeader(HTTPHelper.C_HTTP_LOCATION,resume_url)
+
+  # Set Access cookie and HTTP redirection
+  LET uuid = Access.CreateToken(resume_url,NULL,req.getRequestHeader(HTTPHelper.C_X_FOURJS_REMOTE_ADDR))
+
+  CASE base.Application.getResourceEntry("oidc.app.start.mode")
+    WHEN "cookie"
+      LET cookies[1].name = HTTPHelper.C_COOKIE_OIDC
+      LET cookies[1].value = uuid
+      LET cookies[1].path = path
+      LET cookies[1].domain = domain
+      LET cookies[1].httpOnly = TRUE
+      LET cookies[1].sameSite = HTTPHelper.C_COOKIE_LAX
+      CALL req.setResponseCookies(cookies)
+    WHEN "gnonce"
+      # Append gnonce to redirect url
+      IF query IS NULL THEN
+        LET query = "gnonce=",uuid
+      ELSE
+        LET query = query,"&gnonce=",uuid
+      END IF
+    OTHERWISE
+      CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
+      CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseurl))
+      CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","GrantAccess",SFMT("ACCESS DENIED : unknown 'oidc.app.start.mode' value : '%1'",base.Application.getResourceEntry("oidc.app.start.mode")))
+      RETURN
+  END CASE
+
+  # Build Redirect URL (without query as it depends on redirect method)
+  IF port IS NOT NULL THEN
+    LET redirectURL = SFMT("%1://%2:%3%4",scheme,domain,port,path)
+  ELSE
+    LET redirectURL = SFMT("%1://%2%3",scheme,domain,path)
+  END IF
+
+  IF query IS NOT NULL THEN
+    CALL req.setResponseHeader(HTTPHelper.C_HTTP_LOCATION,redirectURL||"?"||query)
+  ELSE
+    CALL req.setResponseHeader(HTTPHelper.C_HTTP_LOCATION,redirectURL)
+  END IF
   CALL req.sendResponse(302,NULL)
   CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantResume","ACCESS GRANTED")
+
 END FUNCTION
 
 PUBLIC
@@ -383,7 +463,10 @@ FUNCTION GrantAccess(req, baseURL, sess, sub, scopes, attrs, token)
   DEFINE  port      STRING
   DEFINE  scheme    STRING
   DEFINE  query     STRING
+  DEFINE  str       STRING
   DEFINE  ind       INTEGER
+  DEFINE  redirectURL STRING
+
   DEFINE  cookies   WSHelper.WSServerCookiesType
 
   CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantAccess",sess.url)
@@ -392,7 +475,7 @@ FUNCTION GrantAccess(req, baseURL, sess, sub, scopes, attrs, token)
   IF domain.equalsIgnoreCase("localhost") THEN
     # We need to setup http cookies thus requires a valid domain name
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_LOCALHOST_UNALLOWED))
+    CALL req.sendTextResponse(400,NULL,GetErrorPage(C_HTTP_ERROR_LOCALHOST_UNALLOWED,baseurl))
     RETURN
   END IF
 
@@ -402,7 +485,7 @@ FUNCTION GrantAccess(req, baseURL, sess, sub, scopes, attrs, token)
     # Set subject
     IF NOT Session.DoValidate(sess.uuid, sub, token.id_token) THEN
       CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-      CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_INTERNAL_ERROR))
+      CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_INTERNAL_ERROR,baseurl))
       CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantAccess","ACCESS DENIED ,INTERNAL ERROR")
     END IF
 
@@ -418,12 +501,33 @@ FUNCTION GrantAccess(req, baseURL, sess, sub, scopes, attrs, token)
     LET attrs[attrs.getLength()].NAME = C_PROMPT_QUERY
     LET attrs[attrs.getLength()].VALUE = sess.uuid
 
+    # Provide START_URL (without gnonce=xxx)
+    IF base.Application.getResourceEntry("oidc.app.start.mode")=="gnonce" THEN
+      CALL attrs.appendElement()
+      LET attrs[attrs.getLength()].name = HTTPHelper.C_X_FOURJS_FGL_VMPROXY_START_URL
+      LET attrs[attrs.getLength()].value = util.Strings.urlDecode(sess.url)
+    END IF
 
     # Append Subject ID to attributes
-    CALL attrs.appendElement()
-    LET attrs[attrs.getLength()].NAME = "SUB"
-    LET attrs[attrs.getLength()].VALUE = sub
-
+    LET ind = attrs.search("name","SUB")
+    IF ind==0 THEN
+      LET ind = attrs.search("name","sub")
+    END IF
+    IF ind==0 THEN
+      # Not sub defined, add from ID token
+      CALL attrs.appendElement()
+      LET attrs[attrs.getLength()].NAME = "SUB"
+      LET attrs[attrs.getLength()].VALUE = sub
+    ELSE
+      # Ensure they have same value
+      IF attrs[ind].value!= sub THEN
+        CALL Session.DoInvalidate(sess.uuid)
+        CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
+        CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseurl))
+        CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantAccess","ACCESS DENIED : different SUB values")
+        RETURN
+      END IF
+    END IF
     # Append list of authorization scopes separated by comma to attributes
     IF scopes.getLength() >0 THEN
       CALL attrs.appendElement()
@@ -454,23 +558,87 @@ FUNCTION GrantAccess(req, baseURL, sess, sub, scopes, attrs, token)
       LET attrs[attrs.getLength()].VALUE = token.expires_in
     END IF
 
-    # Set Access cookie and HTTP redirection
-    LET uuid = Access.CreateToken(sess.url, attrs, req.getRequestHeader(HTTPHelper.C_X_FOURJS_REMOTE_ADDR))
-    LET cookies[1].name = HTTPHelper.C_COOKIE_OIDC
-    LET cookies[1].value = uuid
-    LET cookies[1].path = path
-    LET cookies[1].domain = domain
-    LET cookies[1].httpOnly = TRUE
-    CALL req.setResponseCookies(cookies)
     CALL req.setResponseHeader(HTTPHelper.C_HTTP_PRAGMA,HTTPHelper.C_HTTP_NO_CACHE)
     CALL req.setResponseHeader(HTTPHelper.C_HTTP_CACHE_CONTROL,HTTPHelper.C_HTTP_NO_CACHE||", "||HTTPHelper.C_HTTP_NO_STORE)
-    CALL req.setResponseHeader(HTTPHelper.C_HTTP_LOCATION,sess.url)
-    CALL req.sendResponse(302,NULL)
-    CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantAccess","ACCESS GRANTED")
+
+    # Set Access cookie and HTTP redirection
+    LET uuid = Access.CreateToken(sess.url, attrs, req.getRequestHeader(HTTPHelper.C_X_FOURJS_REMOTE_ADDR))
+    CASE base.Application.getResourceEntry("oidc.app.start.mode")
+      WHEN "cookie"
+        LET cookies[1].name = HTTPHelper.C_COOKIE_OIDC
+        LET cookies[1].value = uuid
+        LET cookies[1].path = path
+        LET cookies[1].domain = domain
+        LET cookies[1].httpOnly = TRUE
+        LET cookies[1].sameSite = HTTPHelper.C_COOKIE_LAX
+        CALL req.setResponseCookies(cookies)
+      WHEN "gnonce"
+        # Append gnonce to redirect url
+        IF query IS NULL THEN
+          LET query = "gnonce=",uuid
+        ELSE
+          LET query = query,"&gnonce=",uuid
+        END IF
+      OTHERWISE
+        CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
+        CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseURL))
+        CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","GrantAccess",SFMT("ACCESS DENIED : unknown 'oidc.app.start.mode' value : '%1'",base.Application.getResourceEntry("oidc.app.start.mode")))
+        RETURN
+    END CASE
+
+    # Build Redirect URL (without query as it depends on redirect method)
+    IF port IS NOT NULL THEN
+      LET redirectURL = SFMT("%1://%2:%3%4",scheme,domain,port,path)
+    ELSE
+      LET redirectURL = SFMT("%1://%2%3",scheme,domain,path)
+    END IF
+
+    CASE base.Application.getResourceEntry("oidc.app.start.redirect")
+    WHEN "GET"
+        CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
+        LET str = Utils.BuildHTMLSubmit(C_HTTPGetBody,redirectURL,query)
+        IF str IS NOT NULL THEN
+          CALL req.sendTextResponse(200,NULL,str)
+          CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantAccess","ACCESS GRANTED")
+        ELSE
+          CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseURL))
+          CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","GrantAccess","ACCESS DENIED : unable to build HTMLGet formular")
+          RETURN
+        END IF
+    WHEN "POST"
+        CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
+        IF  base.Application.getResourceEntry("oidc.app.start.mode")=="gnonce" THEN
+          # Only set gnonce as POST in order to not appear in browser
+          LET str = Utils.BuildHTMLSubmit(C_HTTPPostBody,sess.url,"gnonce="||uuid)
+        ELSE
+          LET str = Utils.BuildHTMLSubmit(C_HTTPPostBody,sess.url,NULL)
+        END IF
+        IF str IS NOT NULL THEN
+          CALL req.sendTextResponse(200,NULL,str)
+          CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantAccess","ACCESS GRANTED")
+        ELSE
+          CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseURL))
+          CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","GrantAccess","ACCESS DENIED : unable to build HTMLPost formular")
+          RETURN
+        END IF
+    WHEN "302"
+        IF query IS NOT NULL THEN
+          CALL req.setResponseHeader(HTTPHelper.C_HTTP_LOCATION,redirectURL||"?"||query)
+        ELSE
+          CALL req.setResponseHeader(HTTPHelper.C_HTTP_LOCATION,redirectURL)
+        END IF
+        CALL req.sendResponse(302,NULL)
+        CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantAccess","ACCESS GRANTED")
+    OTHERWISE
+        CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
+        CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseURL))
+        CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","GrantAccess","ACCESS DENIED : unknown 'oidc.app.start.redirect' value")
+        RETURN
+    END CASE
   ELSE
     CALL Session.DoInvalidate(sess.uuid)
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED))
+    CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseurl))
     CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","GrantAccess","ACCESS DENIED")
   END IF
 END FUNCTION
@@ -494,6 +662,10 @@ FUNCTION StartProxy(req, url, attrs)
       WHEN HTTPHelper.C_X_FOURJS_FGL_VMPROXY_END_URL
         CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"SPManager","Delegate PROXY END URL",attrs[ind].VALUE)
         CALL req.setResponseHeader(HTTPHelper.C_X_FOURJS_FGL_VMPROXY_END_URL,attrs[ind].VALUE)
+
+      WHEN HTTPHelper.C_X_FOURJS_FGL_VMPROXY_START_URL
+        CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"SPManager","Delegate PROXY START URL",attrs[ind].value)
+        CALL req.setResponseHeader(HTTPHelper.C_X_FOURJS_FGL_VMPROXY_START_URL,attrs[ind].value)
 
       OTHERWISE
         CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"SPManager","Attribute Name",attrs[ind].name)
@@ -538,7 +710,7 @@ FUNCTION CreateOAuth2SessionFromParameters(req, baseURL, idp, url, pub_id, sec_i
       # No logout possible return error page
       CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","CreateOAuth2StartSession","Error : SIGN_OFF cannot be set if there is no end_session end point set")
       CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-      CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+      CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
     ELSE
       IF sign_off IS NULL THEN
         LET sign_off = "QUERY" # Default OAuth2 logout parameter
@@ -556,7 +728,7 @@ FUNCTION CreateOAuth2SessionFromParameters(req, baseURL, idp, url, pub_id, sec_i
         OTHERWISE
           CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartAuthentication","Error : invalid SIGN_OFF value")
           CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-          CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+          CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
 
       END CASE
     END IF
@@ -616,13 +788,13 @@ FUNCTION CreateOpenIDSessionFromParameters(req, baseURL, idp, url, pub_id, sec_i
           OTHERWISE
             CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartAuthentication","Error : invalid SIGN_OFF value")
             CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-            CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+            CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
 
          END CASE
       ELSE
         CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartAuthentication","Error : IDP_LOGOUT_URL parameter requiered with SIGN_OFF")
         CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-        CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+        CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
       END IF
     END IF
   END IF
@@ -652,7 +824,7 @@ FUNCTION StartAuthentication(req, baseURL, url)
   IF oauth IS NOT NULL AND idp_url IS NOT NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartAuthentication","IDP and OAuth are exclusiv")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
     RETURN
   ELSE
     IF oauth IS NOT NULL THEN
@@ -671,7 +843,7 @@ FUNCTION StartAuthentication(req, baseURL, url)
   IF idp.Issuer IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartAuthentication","Issuer is missing")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
   ELSE
     # Retrieve XCF configuration
     LET pub_id = req.getRequestHeader(HTTPHelper.C_X_FOURJS_ENVIRONEMENT_PARAMETER_||C_XCF_CLIENT_PUBLIC_ID)
@@ -679,7 +851,7 @@ FUNCTION StartAuthentication(req, baseURL, url)
     IF pub_id IS NULL THEN
       CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartAuthentication","Public ID is missing")
       CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-      CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+      CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
     ELSE
       # Retrieve optional parameters
       LET authz_prg = req.getRequestHeader(HTTPHelper.C_X_FOURJS_ENVIRONEMENT_PARAMETER_||C_XCF_AUTHORIZATION)
@@ -732,14 +904,14 @@ FUNCTION StartReauthentication(req, baseURL, session_uuid, ua_session, timeout)
   IF sess.uuid IS NULL OR sess.subject IS NULL OR sess.provider_id IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartReauthentication","Prompt UUID error")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
     RETURN
   END IF
 
   IF sess.pub_id IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartReauthentication","Public and shared secret are missing")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
     RETURN
   END IF
 
@@ -747,7 +919,7 @@ FUNCTION StartReauthentication(req, baseURL, session_uuid, ua_session, timeout)
   IF idp.Issuer IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartReauthentication","Issuer is missing")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
     RETURN
   END IF
 
@@ -755,7 +927,7 @@ FUNCTION StartReauthentication(req, baseURL, session_uuid, ua_session, timeout)
   IF NOT Session.SetUASession(session_uuid, ua_session) THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","StartReauthentication","Cannot associate session to prompt ID")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
   ELSE
     # Build ua/resume URL
     LET resumeURL = baseURL || HTTPHelper.C_RESUME_URL || ua_session
@@ -777,13 +949,13 @@ FUNCTION Resume(req)
 END FUNCTION
 
 PUBLIC
-FUNCTION Forbid(req)
+FUNCTION Forbid(req,baseurl)
   DEFINE  req   com.HttpServiceRequest
+  DEFINE  baseurl STRING
   CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
   CALL req.setResponseHeader(C_HTTP_CACHE_CONTROL, C_HTTP_NO_STORE || ", " || C_HTTP_NO_CACHE)
   CALL req.setResponseHeader(C_HTTP_PRAGMA, C_HTTP_NO_CACHE)
-  CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED))
-  CALL req.sendTextResponse(400, NULL, "Access Denied")
+  CALL req.sendTextResponse(403,NULL,GetErrorPage(C_HTTP_ERROR_ACCESS_DENIED,baseurl))
 END FUNCTION
 
 
@@ -800,8 +972,19 @@ FUNCTION HasAccess(req, url, query)
 
   CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"SPManager","HasAccess",url)
 
-  LET cookie = req.findRequestCookie(HTTPHelper.C_COOKIE_OIDC)
-  CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"SPManager","HasAccess",cookie)
+  CASE base.Application.getResourceEntry("oidc.app.start.mode")
+    WHEN "cookie"
+      LET cookie = req.findRequestCookie(HTTPHelper.C_COOKIE_OIDC)
+      CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"SPManager","HasAccess",cookie)
+    WHEN "gnonce"
+      LET ind = HTTPHelper.RetrieveQueryIndexByName(query,"gnonce")
+      IF ind>0 THEN
+        LET cookie = query[ind].value
+        CALL query.deleteElement(ind)
+      END IF
+      CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"SPManager","HasAccess via gnonce",cookie)
+    OTHERWISE
+  END CASE
 
   # Ignore Bootstrap=done from URL othewise Access will fail
   LET ind = HTTPHelper.RetrieveQueryIndexByName(query,"Bootstrap")
@@ -824,11 +1007,12 @@ FUNCTION HasAccess(req, url, query)
 END FUNCTION
 
 PUBLIC
-FUNCTION ForbidAccess(req)
+FUNCTION ForbidAccess(req, baseurl)
   DEFINE  req     com.HttpServiceRequest
+  DEFINE  baseurl STRING
   # FORBID ACCESS
   CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-  CALL req.sendTextResponse(403,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_ACCESS_FORBIDDEN))
+  CALL req.sendTextResponse(403,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_ACCESS_FORBIDDEN,baseurl))
   CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","ForbidAccess","ACCESS FORBIDDEN")
 END FUNCTION
 
@@ -892,7 +1076,7 @@ FUNCTION DoLogout(req, baseURL, uuid)
   IF sess.uuid IS NULL OR sess.subject IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","DoLogout","Logout UUID error")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
     RETURN
   END IF
 
@@ -900,7 +1084,7 @@ FUNCTION DoLogout(req, baseURL, uuid)
   IF idp.Issuer IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","DoLogout","Issuer not found")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_LOGOUT_ERROR))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_LOGOUT_ERROR,baseurl))
     RETURN
   END IF
 
@@ -917,7 +1101,7 @@ FUNCTION DoLogout(req, baseURL, uuid)
     OTHERWISE
       CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","DoLogout","Logout invalid sign_off")
       CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-      CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER))
+      CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_INVALID_PARAMETER,baseurl))
   END CASE
 
   FREE sess.id_token
@@ -952,7 +1136,7 @@ FUNCTION LogoutQuery(req, baseURL, sess, idp)
   CATCH
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","LogoutQuery","Cannot load logout query form")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_LOGOUT_ERROR))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(HTTPHelper.C_HTTP_ERROR_LOGOUT_ERROR,baseurl))
   END TRY
 
 END FUNCTION
@@ -961,8 +1145,9 @@ END FUNCTION
 #+ Process logout query response
 #+
 PUBLIC
-FUNCTION DoQueryLogout(req, uuid, logout)
+FUNCTION DoQueryLogout(req, baseurl, uuid, logout)
   DEFINE  req         com.HttpServiceRequest
+  DEFINE  baseurl     STRING
   DEFINE  uuid        STRING
   DEFINE  logout      BOOLEAN
   DEFINE  sess        SessionType
@@ -974,7 +1159,7 @@ FUNCTION DoQueryLogout(req, uuid, logout)
   IF sess.uuid IS NULL OR sess.subject IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","DoQueryLogout","Logout UUID error")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_LOGOUT_ERROR))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_LOGOUT_ERROR,baseurl))
     RETURN
   END IF
 
@@ -982,7 +1167,7 @@ FUNCTION DoQueryLogout(req, uuid, logout)
   IF idp.Issuer IS NULL THEN
     CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"SPManager","DoQueryLogout","Issuer not found")
     CALL req.setResponseHeader(HTTPHelper.C_CONTENT_TYPE,HTTPHelper.C_TEXT_HTML)
-    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_LOGOUT_ERROR))
+    CALL req.sendTextResponse(500,NULL,GetErrorPage(C_HTTP_ERROR_LOGOUT_ERROR,baseurl))
     RETURN
   END IF
 

@@ -1,7 +1,7 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
 # 
@@ -15,9 +15,9 @@
 # Module implementing JSON Web Key specification
 #
 
-IMPORT COM
-IMPORT XML
-IMPORT Util
+IMPORT com
+IMPORT xml
+IMPORT util
 IMPORT FGL Logs
 IMPORT FGL IdPManager
 
@@ -60,12 +60,10 @@ PUBLIC FUNCTION RetrieveIdpCryptoKey(p_idp,p_key_id)
   DEFINE  _type       VARCHAR(255)
   CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"JWK","RetrieveIdpCertificate",p_key_id)
   LOCATE txt IN MEMORY
-  WHENEVER ERROR CONTINUE 
   SELECT TYPE,value
     INTO _type, txt
     FROM fjs_oidc_keys 
     WHERE provider_id = p_idp.ID AND id = p_key_id
-  WHENEVER ERROR STOP
   IF sqlca.sqlcode=0 THEN
     LET _key = xml.CryptoKey.Create(_type)
     CALL _key.loadPublicFromString(txt)
@@ -126,6 +124,7 @@ FUNCTION RegisterCryptoKeysFromURL(p_idp,p_key_id)
   RETURN ret
 END FUNCTION
 
+
 PRIVATE FUNCTION CreateXmlKeyFromJWK(jwk)
   DEFINE  jwk   JWKType
   DEFINE  KEY   xml.CryptoKey
@@ -137,8 +136,8 @@ PRIVATE FUNCTION CreateXmlKeyFromJWK(jwk)
             BASE64URL2BASE64(jwk.n),
             BASE64URL2BASE64(jwk.e))
       ELSE
-        IF jwk.alg.equalsIgnoreCase("RS256") THEN
-          LET KEY = CreateRSAPublicKey(
+        IF jwk.alg.equalsIgnoreCase("RS256") OR jwk.alg.equalsIgnoreCase("RSA256") THEN
+          LET key = CreateRSAPublicKey(
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
             BASE64URL2BASE64(jwk.n),
             BASE64URL2BASE64(jwk.e))

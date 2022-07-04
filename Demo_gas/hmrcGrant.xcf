@@ -1,27 +1,32 @@
 <APPLICATION Parent="defaultgwc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.4js.com/ns/gas/3.10/cfextwa.xsd">
 	<RESOURCE Id="res.path.demo" Source="INTERNAL">$(res.deployment.path)</RESOURCE>
 	<RESOURCE Id="res.publicId" Source="INTERNAL"><!-- place your client public id here --></RESOURCE>
-	<RESOURCE Id="res.secretId" Source="INTERNAL"><!-- place your client secret id here --></RESOURCE>
-	<RESOURCE Id="res.service.url" Source="INTERNAL">https://test-api.service.hmrc.gov.uk</RESOURCE>
+	<RESOURCE Id="res.secretId" Source="INTERNAL"><!-- place your client public id here --></RESOURCE>
+	<RESOURCE Id="res.scopes" Source="INTERNAL">hello read:vat write:vat</RESOURCE>
+	<!--RESOURCE Id="res.service.url" Source="INTERNAL">https://test-api.service.hmrc.gov.uk</RESOURCE-->
+	<RESOURCE Id="res.service.url" Source="INTERNAL">https://test-www.tax.service.gov.uk</RESOURCE>
 	<EXECUTION AllowUrlParameters="TRUE">
 		<ENVIRONMENT_VARIABLE Id="FGLPROFILE">profile</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="FGLWSDEBUG">9</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="DBDATE">Y4MD-</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="DBNAME">njm_demo310</ENVIRONMENT_VARIABLE>
 		<ENVIRONMENT_VARIABLE Id="HMRC_URL">$(res.service.url)</ENVIRONMENT_VARIABLE>
+		<ENVIRONMENT_VARIABLE Id="CLIENT_PUBLIC_ID">$(res.publicId)</ENVIRONMENT_VARIABLE>
+		<ENVIRONMENT_VARIABLE Id="CLIENT_SECRET_ID">$(res.secretId)</ENVIRONMENT_VARIABLE>
+		<ENVIRONMENT_VARIABLE Id="SCOPES">$(res.scopes)</ENVIRONMENT_VARIABLE>
 		<PATH>$(res.path.demo)</PATH>
 		<MODULE>hmrcGrant</MODULE>
 
-<!-- This is customized OpenIDConnectService Provider specific to HMRC's OAUTH Api -->
-		<DELEGATE service="hmrcOpenIDConnectServiceProvider" >
+<!-- This is customized hmrcOpenIDConnectService Provider specific to HMRC's OAUTH Api -->
+		<DELEGATE service="services/OpenIDConnectServiceProvider" >
 			<OAUTH>$(res.service.url)</OAUTH>
-			<SCOPE>hello read:vat write:vat</SCOPE>
+			<SCOPE>$(res.scopes)</SCOPE>
 
 <!-- These two values should be replaced with your values for your HMRC Account -->
 			<CLIENT_PUBLIC_ID>$(res.publicId)</CLIENT_PUBLIC_ID>
 			<CLIENT_SECRET_ID>$(res.secretId)</CLIENT_SECRET_ID>
 
-			<AUTHORIZATION>fglrun AccessProgram</AUTHORIZATION>			
+			<!--AUTHORIZATION>fglrun AccessProgram</AUTHORIZATION-->
 		</DELEGATE>
 	</EXECUTION>
 </APPLICATION>

@@ -1,7 +1,7 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
 # 
@@ -14,8 +14,8 @@
 #
 # Module implementing OpenID Connect Discovery 1.0
 #
-IMPORT COM
-IMPORT Util
+IMPORT com
+IMPORT util
 IMPORT FGL Logs
 IMPORT FGL HTTPHelper
 
@@ -74,9 +74,6 @@ PRIVATE FUNCTION GetOpenIDConfiguration(base_url)
   DEFINE req  com.HttpRequest
   DEFINE res  com.HttpResponse
   DEFINE ret  OpenIDMetadataType
-
-  CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"Discovery","GetOpenIDConfiguration","Attempting "||base_url||"/.well-known/openid-configuration")
-
   TRY
     LET req = com.HttpRequest.Create(base_url||"/.well-known/openid-configuration")
     CALL req.doRequest()

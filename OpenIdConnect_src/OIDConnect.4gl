@@ -1,10 +1,10 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
-#
+# 
 # Four Js and its suppliers do not warrant or guarantee that these samples
 # are accurate and suitable for your purposes. Their inclusion is purely for
 # information purposes only.
@@ -14,8 +14,8 @@
 #
 # Module implementing the OpenIDConnect protocol
 #
-IMPORT COM
-IMPORT Util
+IMPORT com
+IMPORT util
 IMPORT FGL Logs
 IMPORT FGL IdPManager
 IMPORT FGL Access
@@ -204,6 +204,68 @@ FUNCTION ClientSendCode(idp, redirect, code, client_pub_id, client_secret_id)
 END FUNCTION
 
 #
+# Send OAuth2 code to IdP
+#  to get an access token
+#
+FUNCTION ClientSendCodeJson(idp, redirect, code, client_pub_id, client_secret_id)
+  DEFINE  idp                 IdPManager.IdPType
+  DEFINE  redirect            STRING
+  DEFINE  code                STRING
+  DEFINE  client_pub_id       STRING
+  DEFINE  client_secret_id    STRING
+  DEFINE  query               STRING
+  DEFINE  req                 com.HttpRequest
+  DEFINE  resp                com.HttpResponse
+  DEFINE  ret                 util.JSONObject
+  DEFINE  str                 STRING
+  DEFINE  json RECORD
+    grant_type STRING,
+    client_id STRING,
+    client_secret STRING,
+    redirect_uri STRING,
+    code STRING
+  END RECORD
+
+  CALL Logs.LOG_EVENT(Logs.C_LOG_MSG,"OIDConnect","ClientSendCodeJson",NULL)
+  TRY
+    LET json.grant_type="authorization_code"
+    LET json.code=code
+    LET json.redirect_uri=redirect
+    LET json.client_id=client_pub_id
+
+    #LET query = "grant_type=authorization_code&code="||code||"&redirect_uri="||redirect||"&client_id="||client_pub_id
+    IF client_secret_id IS NOT NULL THEN
+      # NOTICE : client_secret should not be sent according to OAuth2, but google wants it otherwise it fails
+      #LET query = query || "&client_secret="||client_secret_id
+      LET json.client_secret=client_secret_id
+    END IF
+
+    LET query = util.JSON.stringifyOmitNulls(json)
+    CALL Logs.LOG_EVENT(Logs.C_LOG_DEBUG,"OIDConnect","ClientSendCodeJson",sfmt("JSON request: %1", query))
+
+    LET req = com.HttpRequest.Create(idp.token_endpoint)
+    CALL req.setMethod("POST")
+    call req.setHeader("Content-Type", "application/json")
+    CALL req.doTextRequest(query)
+    LET resp = req.getResponse()
+    IF resp.getStatusCode() == 200 THEN
+      LET str = resp.getTextResponse()
+      LET ret = util.JSONObject.parse(str)
+      RETURN TRUE, ret
+    ELSE
+      LET str = resp.getTextResponse()
+      IF str IS NULL THEN
+        LET str = resp.getStatusDescription()
+      END IF
+      CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"OIDConnect","ClientSendCodeJson","HTTPCode("||resp.getStatusCode()||") : "||str)
+    END IF
+  CATCH
+    CALL Logs.LOG_EVENT(Logs.C_LOG_ERROR,"OIDConnect","ClientSendCodeJson","Connection error code "||status)
+  END TRY
+  RETURN FALSE,NULL
+END FUNCTION
+
+#
 # Send openIDConnect code to IdP
 #  to get a Bearer token
 #
@@ -299,9 +361,9 @@ FUNCTION CheckTokenValidity(pub_id,idp,token)
       END IF
     END IF
   END IF
-  IF id_token.claims.scopes IS NOT NULL THEN
-    # Return scope names
-    RETURN TRUE, id_token.claims.sub, id_token.claims.scopes.getKeys()
+  IF id_token.claims.scopes.getLength() > 0 THEN
+    # Return scope names (aka roles)
+    RETURN TRUE, id_token.claims.sub, id_token.claims.scopes
   ELSE
     RETURN TRUE, id_token.claims.sub, NULL
   END IF
@@ -333,6 +395,7 @@ FUNCTION RetrieveUserInfo(idp,token)
         LET req = com.HttpRequest.Create(idp.userinfo_endpoint)
         CALL req.setHeader("Authorization","Bearer "||token.access_token)
       END IF
+      CALL req.setHeader("Accept","application/json")
       CALL req.setConnectionTimeOut(C_PROFILE_TIMEOUT)
       CALL req.doRequest()
       LET resp = req.getResponse()

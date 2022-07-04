@@ -1,7 +1,7 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
 # 
@@ -11,8 +11,8 @@
 # FOURJS_END_COPYRIGHT
 #
 
-IMPORT COM
-IMPORT Util
+IMPORT com
+IMPORT util
 
 CONSTANT GOOGLE_ACCOUNTS = "https://accounts.google.com"
 
@@ -40,6 +40,5 @@ MAIN
   ELSE
     DISPLAY "KO :",resp.getTextResponse()
   END IF
-
 END MAIN
 

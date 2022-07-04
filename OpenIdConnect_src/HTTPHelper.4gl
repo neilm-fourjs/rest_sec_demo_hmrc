@@ -1,7 +1,7 @@
 #
 # FOURJS_START_COPYRIGHT(U,2015)
 # Property of Four Js*
-# (c) Copyright Four Js 2015, 2018. All Rights Reserved.
+# (c) Copyright Four Js 2015, 2022. All Rights Reserved.
 # * Trademark of Four Js Development Tools Europe Ltd
 #   in the United States and elsewhere
 # 
@@ -12,7 +12,7 @@
 #
 
 IMPORT com
-IMPORT XML 
+IMPORT xml 
 IMPORT util
 
 IMPORT FGL WSHelper
@@ -25,6 +25,7 @@ PUBLIC CONSTANT C_X_FOURJS_ENVIRONEMENT_PARAMETER_EXTRA = "X-FourJs-Environment-
 PUBLIC CONSTANT C_X_FOURJS_BOOTSTRAP                    = "X-FourJs-Environment-Parameter-Extra-BOOTSTRAP"
 PUBLIC CONSTANT C_X_FOURJS_FGL_AUTO_LOGOUT_PROMPT_QUERY = "X-FourJs-Environment-FGL_AUTO_LOGOUT_PROMPT_QUERY"
 PUBLIC CONSTANT C_X_FOURJS_FGL_VMPROXY_END_URL          = "X-FourJs-Environment-FGL_VMPROXY_END_URL"
+PUBLIC CONSTANT C_X_FOURJS_FGL_VMPROXY_START_URL        = "X-FourJs-Environment-FGL_VMPROXY_START_URL"
 
 PUBLIC CONSTANT C_GENERO_INTERNAL_DELEGATE              = "_GENERO_INTERNAL_DELEGATE_"
 
@@ -73,6 +74,9 @@ CONSTANT C_HTTP_NO_STORE        =   "no-store"
 
 PUBLIC 
 CONSTANT C_COOKIE_OIDC          =   "GeneroOIDC"
+
+PUBLIC
+CONSTANT C_COOKIE_LAX           =   "Lax"
 
 PUBLIC
 CONSTANT C_CONTENT_TYPE = "Content-Type"
@@ -134,9 +138,13 @@ FUNCTION BuildQueryEncodedURL(url,query)
 END FUNCTION
 
 PUBLIC
-FUNCTION GetErrorPage(code)
-  DEFINE code   INTEGER
-  DEFINE  doc   xml.DomDocument
+FUNCTION GetErrorPage(code, baseURL)
+  DEFINE  code    INTEGER
+  DEFINE  doc     xml.DomDocument
+  DEFINE  baseURL STRING
+  DEFINE  list    xml.DomNodeList
+  DEFINE  node    xml.DomNode
+  DEFINE  css     STRING
   LET doc = xml.DomDocument.Create()
   TRY
     CASE code
@@ -165,9 +173,30 @@ FUNCTION GetErrorPage(code)
       OTHERWISE
         CALL doc.load(base.Application.getResourceEntry("oidc.error.default"))
     END CASE 
+    # Update ccs link with baseURL
+    LET list = doc.selectByXPath("/pre:html/pre:head/pre:link[@type='text/css']","pre","http://www.w3.org/1999/xhtml")
+    IF list.getCount()==1 THEN
+      LET node = list.getItem(1)
+      LET css = node.getAttribute("href")
+      LET css = SFMT("%1%2",baseURL,css)
+      CALL node.setAttribute("href",css)
+    END IF    
     RETURN doc.saveToString()
   CATCH
     RETURN C_HTTP_DefaultBody
   END TRY
 END FUNCTION
   
+PUBLIC FUNCTION RemoveDefaultPortFromURL(url STRING)
+  DEFINE sb base.StringBuffer
+  LET sb = base.StringBuffer.create()
+  CALL sb.append(url)
+  IF sb.getIndexOf("https://",1)==1 THEN
+    CALL sb.replace(":443/","/",1)
+  ELSE
+    IF url.getIndexOf("http://",1)==1 THEN
+      CALL sb.replace(":80/","/",1)
+    END IF
+  END IF
+  RETURN sb.toString()
+END FUNCTION
